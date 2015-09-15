@@ -59,6 +59,8 @@ def has_function(function_name, libraries=None):
   with muted(sys.stdout, sys.stderr):
     result = compiler.has_function(
         function_name, libraries=libraries)
+  if os.path.exists('a.out'):
+    os.remove('a.out')
   return result
 
 
@@ -91,7 +93,7 @@ class BuildCommand(build):
 
   def run(self):
     sources = ['./yara-python.c']
-    exclusions = ['pe_utils.c']
+    exclusions = ['yara/libyara/modules/pe_utils.c']
     libraries = ['yara']
     include_dirs = []
     macros = []
@@ -110,20 +112,28 @@ class BuildCommand(build):
       libraries = []
       include_dirs = ['yara/libyara/include', 'yara/libyara/', '.']
 
+      if (has_function('MD5_Init', libraries=['crypto']) and 
+          has_function('SHA256_Init', libraries=['crypto'])):
+        macros.append(('HASH', '1'))
+        libraries.append('crypto')
+      else:
+        exclusions.append('yara/libyara/modules/hash.c')
+
       if self.enable_magic:
         macros.append(('MAGIC', '1'))
       else:
-        exclusions.append('magic.c')
+        exclusions.append('yara/libyara/modules/magic.c')
 
       if self.enable_cuckoo:
         macros.append(('CUCKOO', '1'))
       else:
-        exclusions.append('cuckoo.c')
+        exclusions.append('yara/libyara/modules/cuckoo.c')
 
       for directory, _, files in os.walk('yara/libyara/'):
         for x in files:
+          x = os.path.join(directory, x)
           if x.endswith('.c') and x not in exclusions:
-            sources.append(os.path.join(directory, x))
+            sources.append(x)
 
     self.distribution.ext_modules = [Extension(
         name='yara',
@@ -142,5 +152,5 @@ setup(
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
     url='https://github.com/plusvic/yara-python',
-    cmdclass={'build': BuildCommand},
-    data_files=['./config.h'])
+    zip_safe=False,
+    cmdclass={'build': BuildCommand})
