@@ -7,7 +7,7 @@ data strings.
 
 Here it goes a little example:
 
-.. code-block:: bash
+.. code-block:: python
 
 	>>> import yara
     >>> rule = yara.compile(source='rule foo {strings: $a = "lmn" condition: $a}')
@@ -25,8 +25,8 @@ Installation
 
 Before installing yara-python you'll need to install YARA, except if you plan
 to link YARA statically into yara-python. If you don't have a specific reason
-for using the static linking method, just install YARA as described in it
-`documentation <http://yara.readthedocs.org/en/latest/gettingstarted.html#compiling-and-installing-yara`_
+for using the static linking method, just install YARA as described in the
+`documentation <http://yara.readthedocs.org/en/latest/gettingstarted.html#compiling-and-installing-yara>`_
 and then:
 
 .. code-block:: bash
@@ -36,6 +36,6 @@ and then:
 Documentation
 -------------
 
-You can find more information about how to use yara-python at
+Find more information about how to use yara-python at
 http://yara.readthedocs.org/en/latest/yarapython.html.
 
