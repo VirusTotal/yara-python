@@ -490,7 +490,7 @@ int yara_callback(
     if (meta->type == META_TYPE_INTEGER)
       object = Py_BuildValue("i", meta->integer);
     else if (meta->type == META_TYPE_BOOLEAN)
-      object = PyBool_FromLong(meta->integer);
+      object = PyBool_FromLong((long) meta->integer);
     else
       object = PY_STRING(meta->string);
 
@@ -1045,7 +1045,7 @@ static PyObject* Rules_next(
       if (meta->type == META_TYPE_INTEGER)
         object = Py_BuildValue("i", meta->integer);
       else if (meta->type == META_TYPE_BOOLEAN)
-        object = PyBool_FromLong(meta->integer);
+        object = PyBool_FromLong((long) meta->integer);
       else
         object = PY_STRING(meta->string);
 
