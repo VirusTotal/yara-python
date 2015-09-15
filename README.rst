@@ -9,7 +9,7 @@ Here it goes a little example:
 
 .. code-block:: python
 
-	>>> import yara
+    >>> import yara
     >>> rule = yara.compile(source='rule foo {strings: $a = "lmn" condition: $a}')
     >>> matches = rule.match(data='abcdefgjiklmnoprstuvwxyz')
     >>> for m in matches:
@@ -31,7 +31,7 @@ and then:
 
 .. code-block:: bash
 
-	$ pip install yara-python
+  $ pip install yara-python
 
 Documentation
 -------------
