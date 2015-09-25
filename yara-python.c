@@ -40,7 +40,7 @@ typedef int Py_ssize_t;
 #endif
 
 #if PY_VERSION_HEX < 0x03020000
-typedef long Py_hash_t
+typedef long Py_hash_t;
 #endif
 
 #if PY_MAJOR_VERSION >= 3
