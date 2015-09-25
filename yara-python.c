@@ -39,6 +39,10 @@ typedef int Py_ssize_t;
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
+#if PY_VERSION_HEX < 0x03020000
+typedef long Py_hash_t
+#endif
+
 #if PY_MAJOR_VERSION >= 3
 #define PY_STRING(x) PyUnicode_FromString(x)
 #define PY_STRING_TO_C(x) PyBytes_AsString(\
@@ -139,7 +143,7 @@ static PyObject* Match_richcompare(
     PyObject* other,
     int op);
 
-static long Match_hash(
+static Py_hash_t Match_hash(
     PyObject* self);
 
 
@@ -951,7 +955,7 @@ static PyObject* Match_richcompare(
 }
 
 
-static long Match_hash(
+static Py_hash_t Match_hash(
     PyObject* self)
 {
   Match* match = (Match*) self;
