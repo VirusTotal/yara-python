@@ -96,8 +96,19 @@ class BuildCommand(build):
     exclusions = ['yara/libyara/modules/pe_utils.c']
     libraries = ['yara']
     include_dirs = []
+    library_dirs = []
+    compile_args = []
     macros = []
 
+    if self.plat_name in ('win32','win-amd64'):
+      building_for_windows = True
+      bits = '64' if self.plat_name == 'win-amd64' else '32'
+      macros.append(('_CRT_SECURE_NO_WARNINGS','1'))
+      libraries.append('advapi32')
+      libraries.append('user32')
+    else:
+      building_for_windows = False
+ 
     if has_function('memmem'):
       macros.append(('HAVE_MEMMEM', '1'))
     if has_function('strlcpy'):
@@ -109,10 +120,17 @@ class BuildCommand(build):
       macros.append(('PROFILING_ENABLED', '1'))
 
     if self.static:
-      libraries = []
-      include_dirs = ['yara/libyara/include', 'yara/libyara/', '.']
+      libraries.remove('yara')
+      include_dirs.extend(['yara/libyara/include', 'yara/libyara/', '.'])
 
-      if (has_function('MD5_Init', libraries=['crypto']) and 
+      if building_for_windows:
+        include_dirs.append('yara/windows/include')
+        library_dirs.append('yara/windows/lib')
+
+      if building_for_windows:
+        macros.append(('HASH', '1'))
+        libraries.append('libeay%s' % bits)
+      elif (has_function('MD5_Init', libraries=['crypto']) and 
           has_function('SHA256_Init', libraries=['crypto'])):
         macros.append(('HASH', '1'))
         libraries.append('crypto')
@@ -126,12 +144,18 @@ class BuildCommand(build):
 
       if self.enable_cuckoo:
         macros.append(('CUCKOO', '1'))
+        if building_for_windows:
+          libraries.append('jansson%s' % bits)
+        else:
+          libraries.append('jansson')
       else:
         exclusions.append('yara/libyara/modules/cuckoo.c')
 
+      exclusions = [os.path.normpath(x) for x in exclusions]
+
       for directory, _, files in os.walk('yara/libyara/'):
         for x in files:
-          x = os.path.join(directory, x)
+          x = os.path.normpath(os.path.join(directory, x))
           if x.endswith('.c') and x not in exclusions:
             sources.append(x)
 
@@ -139,9 +163,10 @@ class BuildCommand(build):
         name='yara',
         sources=sources,
         include_dirs=include_dirs,
+        library_dirs=library_dirs,
         libraries=libraries,
         define_macros=macros,
-        extra_compile_args=['-std=gnu99', '-Wno-deprecated-declarations'])]
+        extra_compile_args=compile_args)]
 
     build.run(self)
 
