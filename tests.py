@@ -613,6 +613,11 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = "ssi" $b = "mis" $c = "oops" condition: all of them }'
         ], 'mississipi')
 
+        self.assertSyntaxError([
+            'rule test { condition: all of ($a*) }',
+            'rule test { condition: all of them }'
+        ])
+
     def testFor(self):
 
         self.assertTrueRules([
