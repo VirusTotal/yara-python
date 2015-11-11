@@ -503,7 +503,8 @@ class TestYara(unittest.TestCase):
         ], PE32_FILE)
 
         self.assertFalseRules([
-            'rule test { strings: $a = { 4D 5A [0-300] 6A 2A } condition: $a }'
+            'rule test { strings: $a = { 4D 5A [0-300] 6A 2A } condition: $a }',
+            'rule test { strings: $a = { 4D 5A [0-128] 45 [0-128] 01 [0-128]  C3 } condition: $a }',
         ], PE32_FILE)
 
         self.assertTrueRules([
@@ -512,6 +513,7 @@ class TestYara(unittest.TestCase):
           'rule test { strings: $a = { 31 32 [1] 34 35 [2] 38 39 } condition: $a }',
           'rule test { strings: $a = { 31 32 [1-] 34 35 [1-] 38 39 } condition: $a }',
           'rule test { strings: $a = { 31 32 [0-3] 34 35 [1-] 38 39 } condition: $a }',
+          'rule test { strings: $a = { 31 32 [0-2] 35 [1-] 37 38 39 } condition: $a }',
         ], '123456789')
 
         self.assertTrueRules([
