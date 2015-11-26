@@ -430,7 +430,7 @@ int yara_callback(
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
-    return CALLBACK_CONTINUE
+    return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE)
   {
