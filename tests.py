@@ -392,6 +392,18 @@ class TestYara(unittest.TestCase):
             'rule test { condition: 1 | 3 ^ 3 == (1 | 3) ^ 3}'
         ])
 
+    def testSyntax(self):
+
+        self.assertSyntaxError([
+            'rule test { strings: $a = "a" $a = "a" condition: all of them }'
+        ])
+
+    def testAnonymousStrings(self):
+
+        self.assertTrueRules([
+            'rule test { strings: $ = "a" $ = "b" condition: all of them }',
+        ], "ab")
+
     def testStrings(self):
 
         self.assertTrueRules([
