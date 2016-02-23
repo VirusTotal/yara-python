@@ -16,6 +16,7 @@
 
 from distutils.command.build import build
 from setuptools import setup, Extension
+from codecs import open
 
 import distutils.errors
 import distutils.ccompiler
@@ -186,9 +187,15 @@ class BuildCommand(build):
     build.run(self)
 
 
+with open('README.rst', 'r', 'utf-8') as f:
+  readme = f.read()
+
 setup(
     name='yara-python',
-    version='3.4.0.00',
+    version='3.4.0.0',
+    description='Python interface for YARA',
+    long_description=readme,
+    license='Apache 2.0',
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
     url='https://github.com/plusvic/yara-python',

@@ -1,37 +1,58 @@
 yara-python
 ===========
 
-This is library for using `YARA <https://github.com/plusvic/yara>`_ from Python.
-You can use it to compile, save and load YARA rules, and to scan files or
-data strings.
+With this library you can use `YARA <https://github.com/plusvic/yara>`_ from
+your Python programs. It covers all YARA's features, from compiling, saving
+and loading rules to scanning files, strings and processes.
 
 Here it goes a little example:
 
 .. code-block:: python
 
     >>> import yara
-    >>> rule = yara.compile(source='rule foo {strings: $a = "lmn" condition: $a}')
+    >>> rule = yara.compile(source='rule foo: bar {strings: $a = "lmn" condition: $a}')
     >>> matches = rule.match(data='abcdefgjiklmnoprstuvwxyz')
-    >>> for m in matches:
-    ...     print m.rule
-    ...     print m.strings
-    ...
+    >>> print(matches)
+    [foo]
+    >>> print(matches[0].rule)
     foo
+    >>> print(matches[0].tags)
+    ['bar']
+    >>> print(matches[0].strings)
     [(10L, '$a', 'lmn')]
 
 
 Installation
 ------------
 
-Before installing yara-python you'll need to install YARA, except if you plan
-to link YARA statically into yara-python. If you don't have a specific reason
-for using the static linking method, just install YARA as described in the
-`documentation <http://yara.readthedocs.org/en/latest/gettingstarted.html#compiling-and-installing-yara>`_
-and then:
+The easiest way of installing YARA is by using ``pip``:
 
 .. code-block:: bash
 
   $ pip install yara-python
+
+But you can also get the source from GitHub and compile it yourself:
+
+.. code-block:: bash
+
+  $ git clone --recursive https://github.com/plusvic/yara-python
+  $ cd yara-python
+  $ python setup.py build
+  $ sudo python setup.py install
+
+Notice the ``--recursive`` option used with ``git``. This is important because
+we need to download the ``yara`` subproject containing the source code for
+``libyara`` (the core YARA library). It's also important to note that the two
+methods above link ``libyara`` statically into yara-python. If you want to link dynamically against a shared ``libyara`` library use:
+
+.. code-block:: bash
+
+  $ sudo python setup.py install --dynamic-linking
+
+For this option to work you must build and install
+[YARA](http://github.com/plusvic/yara) separately before installing
+``yara-python``.
+
 
 Documentation
 -------------
