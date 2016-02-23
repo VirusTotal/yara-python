@@ -394,216 +394,166 @@ typedef struct _CALLBACK_DATA
 
 
 // Forward declarations for handling module data.
-PyObject* handle_module_data(YR_OBJECT_STRUCTURE* module_structure);
-PyObject* handle_module_list(YR_OBJECT_ARRAY* array_object);
-PyObject* handle_module_dictionary(YR_OBJECT_DICTIONARY* dictionary_object);
+PyObject* convert_structure_to_python(
+    YR_OBJECT_STRUCTURE* structure);
 
-PyObject* handle_module_data(YR_OBJECT_STRUCTURE* module_structure)
+
+PyObject* convert_array_to_python(
+    YR_OBJECT_ARRAY* array);
+
+
+PyObject* convert_dictionary_to_python(
+    YR_OBJECT_DICTIONARY* dictionary);
+
+
+PyObject* convert_object_to_python(
+    YR_OBJECT* object)
 {
-  PyObject* dict;
-  PyObject* object;
-  SIZED_STRING* sz;
-  YR_OBJECT* module_object;
-  YR_STRUCTURE_MEMBER* module_member;
+  SIZED_STRING* sized_string;
+  PyObject* result = NULL;
 
-  dict = PyDict_New();
+  if (object == NULL)
+    return NULL;
 
-  if (dict == NULL)
-    return dict;
-
-  module_member = module_structure->members;
-  while (module_member)
+  switch(object->type)
   {
-    object = NULL;
-    module_object = (YR_OBJECT*) module_member->object;
+    case OBJECT_TYPE_INTEGER:
+      if (((YR_OBJECT_INTEGER*) object)->value != UNDEFINED)
+        result = Py_BuildValue(
+            "i", ((YR_OBJECT_INTEGER*) object)->value);
+      break;
 
-    switch(module_object->type)
-    {
-      case OBJECT_TYPE_INTEGER:
-        if (((YR_OBJECT_INTEGER*) module_object)->value == UNDEFINED)
-          break;
+    case OBJECT_TYPE_STRING:
+      sized_string = ((YR_OBJECT_STRING*) object)->value;
+      if (sized_string != NULL)
+        result = PyBytes_FromStringAndSize(
+            sized_string->c_string, sized_string->length);
+      break;
 
-        object = Py_BuildValue("i",
-                               ((YR_OBJECT_INTEGER*) module_object)->value);
-        break;
-      case OBJECT_TYPE_STRING:
-        sz = ((YR_OBJECT_STRING*) module_object)->value;
-        if (sz == NULL)
-          break;
+    case OBJECT_TYPE_STRUCTURE:
+      result = convert_structure_to_python((YR_OBJECT_STRUCTURE*) object);
+      break;
 
-        object = PyBytes_FromStringAndSize(sz->c_string, sz->length);
-        break;
-      case OBJECT_TYPE_STRUCTURE:
-        object = handle_module_data((YR_OBJECT_STRUCTURE*) module_object);
+    case OBJECT_TYPE_ARRAY:
+      result = convert_array_to_python((YR_OBJECT_ARRAY*) object);
+      break;
 
-        break;
-      case OBJECT_TYPE_ARRAY:
-        if (((YR_OBJECT_ARRAY*) module_object)->items == NULL)
-          break;
+    case OBJECT_TYPE_FUNCTION:
+      // Do nothing with functions...
+      break;
 
-        object = handle_module_list((YR_OBJECT_ARRAY*) module_object);
-        break;
-      case OBJECT_TYPE_FUNCTION:
-        // Do nothing with functions...
-        break;
-      case OBJECT_TYPE_REGEXP:
-        // Fairly certain you can't have these. :)
-        break;
-      case OBJECT_TYPE_DICTIONARY:
-        object = handle_module_dictionary((YR_OBJECT_DICTIONARY*) module_object);
-        break;
-      case OBJECT_TYPE_FLOAT:
-        if (((YR_OBJECT_DOUBLE*) module_object)->value == UNDEFINED)
-          break;
+    case OBJECT_TYPE_REGEXP:
+      // Fairly certain you can't have these. :)
+      break;
 
-        object = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) module_object)->value);
-        break;
-      default:
-        break;
-    }
+    case OBJECT_TYPE_DICTIONARY:
+      result = convert_dictionary_to_python((YR_OBJECT_DICTIONARY*) object);
+      break;
 
-    if (object != NULL)
-    {
-      PyDict_SetItemString(dict, module_object->identifier, object);
-      Py_DECREF(object);
-    }
+    case OBJECT_TYPE_FLOAT:
+      if (!isnan(((YR_OBJECT_DOUBLE*) object)->value))
+        result = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) object)->value);
+      break;
 
-    module_member = module_member->next;
+    default:
+      break;
   }
 
-  return dict;
+  return result;
 }
 
 
-PyObject* handle_module_list(YR_OBJECT_ARRAY* array_object)
+PyObject* convert_structure_to_python(
+    YR_OBJECT_STRUCTURE* structure)
+{
+  YR_STRUCTURE_MEMBER* member;
+
+  PyObject* py_object;
+  PyObject* py_dict = PyDict_New();
+
+  if (py_dict == NULL)
+    return py_dict;
+
+  member = structure->members;
+
+  while (member != NULL)
+  {
+    py_object = convert_object_to_python(member->object);
+
+    if (py_object != NULL)
+    {
+      PyDict_SetItemString(py_dict, member->object->identifier, py_object);
+      Py_DECREF(py_object);
+    }
+
+    member =member->next;
+  }
+
+  return py_dict;
+}
+
+
+PyObject* convert_array_to_python(
+    YR_OBJECT_ARRAY* array)
 {
   int i;
-  YR_OBJECT* item;
-  SIZED_STRING* sz;
-  PyObject* object;
-  PyObject* list = PyList_New(0);
 
-  if (list == NULL)
-    return list;
+  PyObject* py_object;
+  PyObject* py_list = PyList_New(0);
+
+  if (py_list == NULL)
+    return py_list;
 
   // If there is nothing in the list, return an empty Python list
-  if (array_object->items == NULL)
-    return list;
+  if (array->items == NULL)
+    return py_list;
 
-  for (i = 0; i < array_object->items->count; i++)
+  for (i = 0; i < array->items->count; i++)
   {
-    object = NULL;
-    item = array_object->items->objects[i];
+    py_object = convert_object_to_python(array->items->objects[i]);
 
-    if (item == NULL)
-      continue;
-
-    switch(array_object->prototype_item->type)
+    if (py_object != NULL)
     {
-      case OBJECT_TYPE_INTEGER:
-        if (((YR_OBJECT_INTEGER*) item)->value == UNDEFINED)
-          break;
-
-        object = Py_BuildValue("i", ((YR_OBJECT_INTEGER*) item)->value);
-        break;
-      case OBJECT_TYPE_STRING:
-        if (((YR_OBJECT_STRING*) item)->value == NULL)
-          break;
-
-        sz = ((YR_OBJECT_STRING*) item)->value;
-        object = PyBytes_FromStringAndSize(sz->c_string, sz->length);
-        break;
-      case OBJECT_TYPE_STRUCTURE:
-        object = handle_module_data((YR_OBJECT_STRUCTURE*) item);
-        break;
-      case OBJECT_TYPE_FLOAT:
-        if (((YR_OBJECT_DOUBLE*) item)->value == UNDEFINED)
-          break;
-
-        object = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) item)->value);
-        break;
-      default:
-        break;
-    }
-
-    // object can be NULL because handle_module_data() can return NULL.
-    if (object != NULL)
-    {
-      PyList_Append(list, object);
-      Py_DECREF(object);
+      PyList_Append(py_list, py_object);
+      Py_DECREF(py_object);
     }
   }
 
-  return list;
+  return py_list;
 }
 
 
-PyObject* handle_module_dictionary(YR_OBJECT_DICTIONARY* dictionary_object)
+PyObject* convert_dictionary_to_python(
+    YR_OBJECT_DICTIONARY* dictionary)
 {
   int i;
-  YR_OBJECT* item;
-  SIZED_STRING* sz;
-  PyObject* object;
-  PyObject* dict = PyDict_New();
 
-  if (dict == NULL)
-    return dict;
+  PyObject* py_object;
+  PyObject* py_dict = PyDict_New();
+
+  if (py_dict == NULL)
+    return py_dict;
 
   // If there is nothing in the YARA dictionary, return an empty Python dict
-  if (dictionary_object->items == NULL)
-    return dict;
+  if (dictionary->items == NULL)
+    return py_dict;
 
-  for (i = 0; i < dictionary_object->items->used; i++)
+  for (i = 0; i < dictionary->items->used; i++)
   {
-    object = NULL;
+    py_object = convert_object_to_python(dictionary->items->objects[i].obj);
 
-    if (dictionary_object->items->objects + i == NULL)
-      continue;
-
-    item = dictionary_object->items->objects[i].obj;
-
-    if (item == NULL)
-      continue;
-
-    switch(dictionary_object->prototype_item->type)
+    if (py_object != NULL)
     {
-      case OBJECT_TYPE_INTEGER:
-        if (((YR_OBJECT_INTEGER*) item)->value == UNDEFINED)
-          break;
+      PyDict_SetItemString(
+          py_dict,
+          dictionary->items->objects[i].key,
+          py_object);
 
-        object = Py_BuildValue("i", ((YR_OBJECT_INTEGER*) item)->value);
-        break;
-      case OBJECT_TYPE_STRING:
-        if (((YR_OBJECT_STRING*) item)->value == NULL)
-          break;
-
-        sz = ((YR_OBJECT_STRING*) item)->value;
-        object = PyBytes_FromStringAndSize(sz->c_string, sz->length);
-        break;
-      case OBJECT_TYPE_STRUCTURE:
-        object = handle_module_data((YR_OBJECT_STRUCTURE*) item);
-        break;
-      case OBJECT_TYPE_FLOAT:
-        if (((YR_OBJECT_DOUBLE*) item)->value == UNDEFINED)
-          break;
-
-        object = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) item)->value);
-        break;
-      default:
-        break;
-    }
-
-    // object can be NULL if the value is UNDEFINED
-    if (object != NULL)
-    {
-      PyDict_SetItemString(dict,
-                           dictionary_object->items->objects[i].key,
-                           object);
-      Py_DECREF(object);
+      Py_DECREF(py_object);
     }
   }
 
-  return dict;
+  return py_dict;
 }
 
 
@@ -689,7 +639,9 @@ int yara_callback(
   if (message == CALLBACK_MSG_MODULE_IMPORTED)
   {
     gil_state = PyGILState_Ensure();
-    module_info_dict = handle_module_data((YR_OBJECT_STRUCTURE*) message_data);
+
+    module_info_dict = convert_structure_to_python(
+        (YR_OBJECT_STRUCTURE*) message_data);
 
     if (module_info_dict == NULL)
       return CALLBACK_CONTINUE;
@@ -699,6 +651,7 @@ int yara_callback(
     Py_DECREF(object);
 
     Py_INCREF(modules_callback);
+
     callback_result = PyObject_CallFunctionObjArgs(
         modules_callback,
         module_info_dict,
