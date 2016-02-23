@@ -95,7 +95,10 @@ class BuildCommand(build):
   def run(self):
     """Execute the build command."""
 
-    os.chdir(os.path.dirname(__file__))
+    base_dir = os.path.dirname(__file__)
+
+    if base_dir:
+      os.chdir(base_dir)
 
     sources = ['yara-python.c']
     exclusions = ['yara/libyara/modules/pe_utils.c']
