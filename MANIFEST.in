@@ -1,0 +1,3 @@
+include *.c *.h
+include yara/libyara/modules/module_list
+recursive-include yara *.c *.h
