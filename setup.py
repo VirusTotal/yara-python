@@ -69,8 +69,8 @@ class BuildCommand(build):
 
   user_options = build.user_options + [
       ('dynamic-linking', None,'link dynamically against libyara'),
-      ('enable-cuckoo', None,'enable "cuckoo" module (use with --static)'),
-      ('enable-magic', None,'enable "magic" module (use with --static)'),
+      ('enable-cuckoo', None,'enable "cuckoo" module'),
+      ('enable-magic', None,'enable "magic" module'),
       ('enable-profiling', None,'enable profiling features')]
 
   boolean_options = build.boolean_options + [
@@ -85,10 +85,10 @@ class BuildCommand(build):
 
   def finalize_options(self):
     build.finalize_options(self)
-    if self.enable_magic and self.dynamic:
+    if self.enable_magic and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-magic can''t be used with --dynamic-linking')
-    if self.enable_cuckoo and self.dynamic:
+    if self.enable_cuckoo and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-cuckoo can''t be used with --dynamic-linking')
 
@@ -105,7 +105,7 @@ class BuildCommand(build):
     libraries = ['yara']
     include_dirs = []
     library_dirs = []
-    compile_args = ['-O3']
+    compile_args = []
     macros = []
 
     if self.plat_name in ('win32','win-amd64'):
