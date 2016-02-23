@@ -68,29 +68,29 @@ def has_function(function_name, libraries=None):
 class BuildCommand(build):
 
   user_options = build.user_options + [
-      ('static','s','build libyara statically into yara-python module'),
+      ('dynamic-linking', None,'link dynamically against libyara'),
       ('enable-cuckoo', None,'enable "cuckoo" module (use with --static)'),
       ('enable-magic', None,'enable "magic" module (use with --static)'),
       ('enable-profiling', None,'enable profiling features')]
 
   boolean_options = build.boolean_options + [
-      'static', 'enable-cuckoo', 'enable-magic', 'enable-profiling']
+      'dynamic', 'enable-cuckoo', 'enable-magic', 'enable-profiling']
 
   def initialize_options(self):
     build.initialize_options(self)
-    self.static = None
+    self.dynamic_linking = None
     self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_profiling = None
 
   def finalize_options(self):
     build.finalize_options(self)
-    if self.enable_magic and not self.static:
+    if self.enable_magic and self.dynamic:
       raise distutils.errors.DistutilsOptionError(
-          '--enable-magic must be used with --static')
-    if self.enable_cuckoo and not self.static:
+          '--enable-magic can''t be used with --dynamic-linking')
+    if self.enable_cuckoo and self.dynamic:
       raise distutils.errors.DistutilsOptionError(
-          '--enable-cuckoo must be used with --static')
+          '--enable-cuckoo can''t be used with --dynamic-linking')
 
   def run(self):
     """Execute the build command."""
@@ -134,7 +134,7 @@ class BuildCommand(build):
     if self.enable_profiling:
       macros.append(('PROFILING_ENABLED', '1'))
 
-    if self.static:
+    if not self.dynamic_linking:
       libraries.remove('yara')
       include_dirs.extend(['yara/libyara/include', 'yara/libyara/', '.'])
 
@@ -188,7 +188,7 @@ class BuildCommand(build):
 
 setup(
     name='yara-python',
-    version='3.4.2',
+    version='3.4.0.00',
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
     url='https://github.com/plusvic/yara-python',
