@@ -55,6 +55,7 @@ def muted(*streams):
 
 
 def has_function(function_name, libraries=None):
+  """Checks if a given functions exists in the current platform."""
   compiler = distutils.ccompiler.new_compiler()
   with muted(sys.stdout, sys.stderr):
     result = compiler.has_function(
@@ -92,12 +93,16 @@ class BuildCommand(build):
           '--enable-cuckoo must be used with --static')
 
   def run(self):
-    sources = ['./yara-python.c']
+    """Execute the build command."""
+
+    os.chdir(os.path.dirname(__file__))
+
+    sources = ['yara-python.c']
     exclusions = ['yara/libyara/modules/pe_utils.c']
     libraries = ['yara']
     include_dirs = []
     library_dirs = []
-    compile_args = []
+    compile_args = ['-O3']
     macros = []
 
     if self.plat_name in ('win32','win-amd64'):
@@ -108,7 +113,14 @@ class BuildCommand(build):
       libraries.append('user32')
     else:
       building_for_windows = False
- 
+
+    if 'macosx' in self.plat_name:
+      building_for_osx = True
+      include_dirs.append('/opt/local/include')
+      library_dirs.append('/opt/local/lib')
+    else:
+      building_for_osx = False
+
     if has_function('memmem'):
       macros.append(('HAVE_MEMMEM', '1'))
     if has_function('strlcpy'):
@@ -130,7 +142,7 @@ class BuildCommand(build):
       if building_for_windows:
         macros.append(('HASH', '1'))
         libraries.append('libeay%s' % bits)
-      elif (has_function('MD5_Init', libraries=['crypto']) and 
+      elif (has_function('MD5_Init', libraries=['crypto']) and
           has_function('SHA256_Init', libraries=['crypto'])):
         macros.append(('HASH', '1'))
         libraries.append('crypto')
@@ -173,7 +185,7 @@ class BuildCommand(build):
 
 setup(
     name='yara-python',
-    version='3.4.1',
+    version='3.4.2',
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
     url='https://github.com/plusvic/yara-python',
