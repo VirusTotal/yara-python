@@ -388,8 +388,223 @@ typedef struct _CALLBACK_DATA
   PyObject* matches;
   PyObject* callback;
   PyObject* modules_data;
+  PyObject* modules_callback;
 
 } CALLBACK_DATA;
+
+
+// Forward declarations for handling module data.
+PyObject* handle_module_data(YR_OBJECT_STRUCTURE* module_structure);
+PyObject* handle_module_list(YR_OBJECT_ARRAY* array_object);
+PyObject* handle_module_dictionary(YR_OBJECT_DICTIONARY* dictionary_object);
+
+PyObject* handle_module_data(YR_OBJECT_STRUCTURE* module_structure)
+{
+  PyObject* dict;
+  PyObject* object;
+  SIZED_STRING* sz;
+  YR_OBJECT* module_object;
+  YR_STRUCTURE_MEMBER* module_member;
+
+  dict = PyDict_New();
+
+  if (dict == NULL)
+    return dict;
+
+  module_member = module_structure->members;
+  while (module_member)
+  {
+    object = NULL;
+    module_object = (YR_OBJECT*) module_member->object;
+
+    switch(module_object->type)
+    {
+      case OBJECT_TYPE_INTEGER:
+        if (((YR_OBJECT_INTEGER*) module_object)->value == UNDEFINED)
+          break;
+
+        object = Py_BuildValue("i",
+                               ((YR_OBJECT_INTEGER*) module_object)->value);
+        break;
+      case OBJECT_TYPE_STRING:
+        sz = ((YR_OBJECT_STRING*) module_object)->value;
+        if (sz == NULL)
+          break;
+
+        object = PyBytes_FromStringAndSize(sz->c_string, sz->length);
+        break;
+      case OBJECT_TYPE_STRUCTURE:
+        object = handle_module_data((YR_OBJECT_STRUCTURE*) module_object);
+
+        break;
+      case OBJECT_TYPE_ARRAY:
+        if (((YR_OBJECT_ARRAY*) module_object)->items == NULL)
+          break;
+
+        object = handle_module_list((YR_OBJECT_ARRAY*) module_object);
+        break;
+      case OBJECT_TYPE_FUNCTION:
+        // Do nothing with functions...
+        break;
+      case OBJECT_TYPE_REGEXP:
+        // Fairly certain you can't have these. :)
+        break;
+      case OBJECT_TYPE_DICTIONARY:
+        object = handle_module_dictionary((YR_OBJECT_DICTIONARY*) module_object);
+        break;
+      case OBJECT_TYPE_FLOAT:
+        if (((YR_OBJECT_DOUBLE*) module_object)->value == UNDEFINED)
+          break;
+
+        object = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) module_object)->value);
+        break;
+      default:
+        break;
+    }
+
+    if (object != NULL)
+    {
+      PyDict_SetItemString(dict, module_object->identifier, object);
+      Py_DECREF(object);
+    }
+
+    module_member = module_member->next;
+  }
+
+  return dict;
+}
+
+
+PyObject* handle_module_list(YR_OBJECT_ARRAY* array_object)
+{
+  int i;
+  YR_OBJECT* item;
+  SIZED_STRING* sz;
+  PyObject* object;
+  PyObject* list = PyList_New(0);
+
+  if (list == NULL)
+    return list;
+
+  // If there is nothing in the list, return an empty Python list
+  if (array_object->items == NULL)
+    return list;
+
+  for (i = 0; i < array_object->items->count; i++)
+  {
+    object = NULL;
+    item = array_object->items->objects[i];
+
+    if (item == NULL)
+      continue;
+
+    switch(array_object->prototype_item->type)
+    {
+      case OBJECT_TYPE_INTEGER:
+        if (((YR_OBJECT_INTEGER*) item)->value == UNDEFINED)
+          break;
+
+        object = Py_BuildValue("i", ((YR_OBJECT_INTEGER*) item)->value);
+        break;
+      case OBJECT_TYPE_STRING:
+        if (((YR_OBJECT_STRING*) item)->value == NULL)
+          break;
+
+        sz = ((YR_OBJECT_STRING*) item)->value;
+        object = PyBytes_FromStringAndSize(sz->c_string, sz->length);
+        break;
+      case OBJECT_TYPE_STRUCTURE:
+        object = handle_module_data((YR_OBJECT_STRUCTURE*) item);
+        break;
+      case OBJECT_TYPE_FLOAT:
+        if (((YR_OBJECT_DOUBLE*) item)->value == UNDEFINED)
+          break;
+
+        object = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) item)->value);
+        break;
+      default:
+        break;
+    }
+
+    // object can be NULL because handle_module_data() can return NULL.
+    if (object != NULL)
+    {
+      PyList_Append(list, object);
+      Py_DECREF(object);
+    }
+  }
+
+  return list;
+}
+
+
+PyObject* handle_module_dictionary(YR_OBJECT_DICTIONARY* dictionary_object)
+{
+  int i;
+  YR_OBJECT* item;
+  SIZED_STRING* sz;
+  PyObject* object;
+  PyObject* dict = PyDict_New();
+
+  if (dict == NULL)
+    return dict;
+
+  // If there is nothing in the YARA dictionary, return an empty Python dict
+  if (dictionary_object->items == NULL)
+    return dict;
+
+  for (i = 0; i < dictionary_object->items->used; i++)
+  {
+    object = NULL;
+
+    if (dictionary_object->items->objects + i == NULL)
+      continue;
+
+    item = dictionary_object->items->objects[i].obj;
+
+    if (item == NULL)
+      continue;
+
+    switch(dictionary_object->prototype_item->type)
+    {
+      case OBJECT_TYPE_INTEGER:
+        if (((YR_OBJECT_INTEGER*) item)->value == UNDEFINED)
+          break;
+
+        object = Py_BuildValue("i", ((YR_OBJECT_INTEGER*) item)->value);
+        break;
+      case OBJECT_TYPE_STRING:
+        if (((YR_OBJECT_STRING*) item)->value == NULL)
+          break;
+
+        sz = ((YR_OBJECT_STRING*) item)->value;
+        object = PyBytes_FromStringAndSize(sz->c_string, sz->length);
+        break;
+      case OBJECT_TYPE_STRUCTURE:
+        object = handle_module_data((YR_OBJECT_STRUCTURE*) item);
+        break;
+      case OBJECT_TYPE_FLOAT:
+        if (((YR_OBJECT_DOUBLE*) item)->value == UNDEFINED)
+          break;
+
+        object = Py_BuildValue("d", ((YR_OBJECT_DOUBLE*) item)->value);
+        break;
+      default:
+        break;
+    }
+
+    // object can be NULL if the value is UNDEFINED
+    if (object != NULL)
+    {
+      PyDict_SetItemString(dict,
+                           dictionary_object->items->objects[i].key,
+                           object);
+      Py_DECREF(object);
+    }
+  }
+
+  return dict;
+}
 
 
 int yara_callback(
@@ -415,8 +630,10 @@ int yara_callback(
   PyObject* matches = ((CALLBACK_DATA*) user_data)->matches;
   PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
   PyObject* modules_data = ((CALLBACK_DATA*) user_data)->modules_data;
+  PyObject* modules_callback = ((CALLBACK_DATA*) user_data)->modules_callback;
   PyObject* module_data;
   PyObject* callback_result;
+  PyObject* module_info_dict;
 
   Py_ssize_t data_size;
   PyGILState_STATE gil_state;
@@ -430,6 +647,9 @@ int yara_callback(
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
+    return CALLBACK_CONTINUE;
+
+  if (message == CALLBACK_MSG_MODULE_IMPORTED && modules_callback == NULL)
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE)
@@ -464,6 +684,49 @@ int yara_callback(
 
     PyGILState_Release(gil_state);
     return CALLBACK_CONTINUE;
+  }
+
+  if (message == CALLBACK_MSG_MODULE_IMPORTED)
+  {
+    gil_state = PyGILState_Ensure();
+    module_info_dict = handle_module_data((YR_OBJECT_STRUCTURE*) message_data);
+
+    if (module_info_dict == NULL)
+      return CALLBACK_CONTINUE;
+
+    object = PY_STRING(((YR_OBJECT_STRUCTURE*) message_data)->identifier);
+    PyDict_SetItemString(module_info_dict, "module", object);
+    Py_DECREF(object);
+
+    Py_INCREF(modules_callback);
+    callback_result = PyObject_CallFunctionObjArgs(
+        modules_callback,
+        module_info_dict,
+        NULL);
+
+    if (callback_result != NULL)
+    {
+      #if PY_MAJOR_VERSION >= 3
+      if (PyLong_Check(callback_result))
+      #else
+      if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
+      #endif
+      {
+        result = (int) PyLong_AsLong(callback_result);
+      }
+
+      Py_DECREF(callback_result);
+    }
+    else
+    {
+      result = CALLBACK_ERROR;
+    }
+
+    Py_DECREF(module_info_dict);
+    Py_DECREF(modules_callback);
+    PyGILState_Release(gil_state);
+
+    return result;
   }
 
   rule = (YR_RULE*) message_data;
@@ -1080,7 +1343,8 @@ static PyObject* Rules_match(
 {
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
-      "callback", "fast", "timeout", "modules_data", NULL
+      "callback", "fast", "timeout", "modules_data",
+      "modules_callback", NULL
       };
 
   char* filepath = NULL;
@@ -1102,11 +1366,12 @@ static PyObject* Rules_match(
   callback_data.matches = NULL;
   callback_data.callback = NULL;
   callback_data.modules_data = NULL;
+  callback_data.modules_callback = NULL;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis#OOOiO",
+        "|sis#OOOiOO",
         kwlist,
         &filepath,
         &pid,
@@ -1116,7 +1381,8 @@ static PyObject* Rules_match(
         &callback_data.callback,
         &fast,
         &timeout,
-        &callback_data.modules_data))
+        &callback_data.modules_data,
+        &callback_data.modules_callback))
   {
     if (filepath == NULL && data == NULL && pid == 0)
     {
@@ -1132,6 +1398,16 @@ static PyObject* Rules_match(
         return PyErr_Format(
             PyExc_TypeError,
             "'callback' must be callable");
+      }
+    }
+
+    if (callback_data.modules_callback != NULL)
+    {
+      if (!PyCallable_Check(callback_data.modules_callback))
+      {
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'modules_callback' must be callable");
       }
     }
 
