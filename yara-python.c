@@ -724,7 +724,7 @@ int yara_callback(
   {
     yr_string_matches_foreach(string, m)
     {
-      object = PyBytes_FromStringAndSize((char*) m->data, m->length);
+      object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
 
       tuple = Py_BuildValue(
           "(L,s,O)",
