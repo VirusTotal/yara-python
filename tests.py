@@ -915,6 +915,23 @@ class TestYara(unittest.TestCase):
 
         self.assertTrue(len(m) == 1)
 
+    def testModuleData(self):
+
+        data = {}
+
+        def callback(module_data):
+            data['constants'] = module_data.get('constants')
+
+        r1 = yara.compile(
+            source='import "tests" rule test { condition: false }')
+
+        r1.match(data='', modules_callback=callback)
+
+        self.assertTrue(data['constants']['foo'] == 'foo')
+        self.assertTrue(data['constants']['empty'] == '')
+        self.assertTrue(data['constants']['one'] == 1)
+        self.assertTrue(data['constants']['two'] == 2)
+
 
 
 if __name__ == "__main__":
