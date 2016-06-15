@@ -1,7 +1,7 @@
 yara-python
 ===========
 
-With this library you can use `YARA <https://github.com/plusvic/yara>`_ from
+With this library you can use `YARA <https://github.com/VirusTotal/yara>`_ from
 your Python programs. It covers all YARA's features, from compiling, saving
 and loading rules to scanning files, strings and processes.
 
@@ -35,7 +35,7 @@ But you can also get the source from GitHub and compile it yourself:
 
 .. code-block:: bash
 
-  $ git clone --recursive https://github.com/plusvic/yara-python
+  $ git clone --recursive https://github.com/VirusTotal/yara-python
   $ cd yara-python
   $ python setup.py build
   $ sudo python setup.py install
@@ -43,14 +43,15 @@ But you can also get the source from GitHub and compile it yourself:
 Notice the ``--recursive`` option used with ``git``. This is important because
 we need to download the ``yara`` subproject containing the source code for
 ``libyara`` (the core YARA library). It's also important to note that the two
-methods above link ``libyara`` statically into yara-python. If you want to link dynamically against a shared ``libyara`` library use:
+methods above link ``libyara`` statically into yara-python. If you want to link
+dynamically against a shared ``libyara`` library use:
 
 .. code-block:: bash
 
   $ sudo python setup.py install --dynamic-linking
 
 For this option to work you must build and install
-[YARA](http://github.com/plusvic/yara) separately before installing
+`YARA <https://github.com/VirusTotal/yara>`_ separately before installing
 ``yara-python``.
 
 
@@ -59,4 +60,3 @@ Documentation
 
 Find more information about how to use yara-python at
 http://yara.readthedocs.org/en/latest/yarapython.html.
-

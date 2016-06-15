@@ -198,6 +198,6 @@ setup(
     license='Apache 2.0',
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
-    url='https://github.com/plusvic/yara-python',
+    url='https://github.com/VirusTotal/yara-python',
     zip_safe=False,
     cmdclass={'build': BuildCommand})
