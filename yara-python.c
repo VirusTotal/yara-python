@@ -901,118 +901,6 @@ static size_t flo_write(
 }
 
 
-int process_compile_externals(
-    PyObject* externals,
-    YR_COMPILER* compiler)
-{
-  PyObject* key;
-  PyObject* value;
-  Py_ssize_t pos = 0;
-
-  char* identifier = NULL;
-
-  while (PyDict_Next(externals, &pos, &key, &value))
-  {
-    identifier = PY_STRING_TO_C(key);
-
-    if (PyBool_Check(value))
-    {
-      yr_compiler_define_boolean_variable(
-          compiler,
-          identifier,
-          PyObject_IsTrue(value));
-    }
-#if PY_MAJOR_VERSION >= 3
-    else if (PyLong_Check(value))
-#else
-    else if (PyLong_Check(value) || PyInt_Check(value))
-#endif
-    {
-      yr_compiler_define_integer_variable(
-          compiler,
-          identifier,
-          PyLong_AsLong(value));
-    }
-    else if (PyFloat_Check(value))
-    {
-      yr_compiler_define_float_variable(
-          compiler,
-          identifier,
-          PyFloat_AsDouble(value));
-    }
-    else if (PY_STRING_CHECK(value))
-    {
-      yr_compiler_define_string_variable(
-          compiler,
-          identifier,
-          PY_STRING_TO_C(value));
-    }
-    else
-    {
-      return FALSE;
-    }
-  }
-
-  return TRUE;
-}
-
-
-int process_match_externals(
-    PyObject* externals,
-    YR_RULES* rules)
-{
-  PyObject* key;
-  PyObject* value;
-  Py_ssize_t pos = 0;
-
-  char* identifier = NULL;
-
-  while (PyDict_Next(externals, &pos, &key, &value))
-  {
-    identifier = PY_STRING_TO_C(key);
-
-    if (PyBool_Check(value))
-    {
-      yr_rules_define_boolean_variable(
-          rules,
-          identifier,
-          PyObject_IsTrue(value));
-    }
-#if PY_MAJOR_VERSION >= 3
-    else if (PyLong_Check(value))
-#else
-    else if (PyLong_Check(value) || PyInt_Check(value))
-#endif
-    {
-      yr_rules_define_integer_variable(
-          rules,
-          identifier,
-          PyLong_AsLong(value));
-    }
-    else if (PyFloat_Check(value))
-    {
-      yr_rules_define_float_variable(
-          rules,
-          identifier,
-          PyFloat_AsDouble(value));
-    }
-    else if (PY_STRING_CHECK(value))
-    {
-      yr_rules_define_string_variable(
-          rules,
-          identifier,
-          PY_STRING_TO_C(value));
-    }
-    else
-    {
-      return FALSE;
-    }
-  }
-
-  return TRUE;
-}
-
-
 PyObject* handle_error(
     int error,
     char* extra)
@@ -1049,12 +937,151 @@ PyObject* handle_error(
       return PyErr_Format(
           YaraTimeoutError,
           "scanning timed out");
+    case ERROR_INVALID_EXTERNAL_VARIABLE_TYPE:
+      return PyErr_Format(
+          YaraError,
+          "external variable \"%s\" was already defined with a different type",
+          extra);
     default:
       return PyErr_Format(
           YaraError,
           "internal error: %d",
           error);
   }
+}
+
+
+int process_compile_externals(
+    PyObject* externals,
+    YR_COMPILER* compiler)
+{
+  PyObject* key;
+  PyObject* value;
+  Py_ssize_t pos = 0;
+
+  char* identifier = NULL;
+  int result;
+
+  while (PyDict_Next(externals, &pos, &key, &value))
+  {
+    identifier = PY_STRING_TO_C(key);
+
+    if (PyBool_Check(value))
+    {
+      result = yr_compiler_define_boolean_variable(
+          compiler,
+          identifier,
+          PyObject_IsTrue(value));
+    }
+#if PY_MAJOR_VERSION >= 3
+    else if (PyLong_Check(value))
+#else
+    else if (PyLong_Check(value) || PyInt_Check(value))
+#endif
+    {
+      result = yr_compiler_define_integer_variable(
+          compiler,
+          identifier,
+          PyLong_AsLong(value));
+    }
+    else if (PyFloat_Check(value))
+    {
+      result = yr_compiler_define_float_variable(
+          compiler,
+          identifier,
+          PyFloat_AsDouble(value));
+    }
+    else if (PY_STRING_CHECK(value))
+    {
+      result = yr_compiler_define_string_variable(
+          compiler,
+          identifier,
+          PY_STRING_TO_C(value));
+    }
+    else
+    {
+      PyErr_Format(
+          PyExc_TypeError,
+          "external values must be of type integer, float, boolean or string");
+
+      return ERROR_INVALID_ARGUMENT;
+    }
+
+    if (result != ERROR_SUCCESS)
+    {
+      handle_error(result, identifier);
+      return result;
+    }
+  }
+
+  return ERROR_SUCCESS;
+}
+
+
+int process_match_externals(
+    PyObject* externals,
+    YR_RULES* rules)
+{
+  PyObject* key;
+  PyObject* value;
+  Py_ssize_t pos = 0;
+
+  char* identifier = NULL;
+  int result;
+
+  while (PyDict_Next(externals, &pos, &key, &value))
+  {
+    identifier = PY_STRING_TO_C(key);
+
+    if (PyBool_Check(value))
+    {
+      result = yr_rules_define_boolean_variable(
+          rules,
+          identifier,
+          PyObject_IsTrue(value));
+    }
+#if PY_MAJOR_VERSION >= 3
+    else if (PyLong_Check(value))
+#else
+    else if (PyLong_Check(value) || PyInt_Check(value))
+#endif
+    {
+      result = yr_rules_define_integer_variable(
+          rules,
+          identifier,
+          PyLong_AsLong(value));
+    }
+    else if (PyFloat_Check(value))
+    {
+      result = yr_rules_define_float_variable(
+          rules,
+          identifier,
+          PyFloat_AsDouble(value));
+    }
+    else if (PY_STRING_CHECK(value))
+    {
+      result = yr_rules_define_string_variable(
+          rules,
+          identifier,
+          PY_STRING_TO_C(value));
+    }
+    else
+    {
+      PyErr_Format(
+          PyExc_TypeError,
+          "external values must be of type integer, float, boolean or string");
+
+      return ERROR_INVALID_ARGUMENT;
+    }
+
+    if (result != ERROR_SUCCESS)
+    {
+      handle_error(result, identifier);
+      return result;
+    }
+  }
+
+  return ERROR_SUCCESS;
 }
 
 
@@ -1378,14 +1405,11 @@ static PyObject* Rules_match(
     {
       if (PyDict_Check(externals))
       {
-        if (!process_match_externals(externals, object->rules))
+        if (process_match_externals(externals, object->rules) != ERROR_SUCCESS)
         {
           // Restore original externals provided during compiling.
           process_match_externals(object->externals, object->rules);
-
-          return PyErr_Format(
-              PyExc_TypeError,
-              "external values must be of type integer, float, boolean or string");
+          return NULL;
         }
       }
       else
@@ -1453,21 +1477,24 @@ static PyObject* Rules_match(
 
     // Restore original externals provided during compiling.
     if (object->externals != NULL)
-      process_match_externals(object->externals, object->rules);
+    {
+      if (process_match_externals(
+            object->externals, object->rules) != ERROR_SUCCESS)
+      {
+        Py_DECREF(callback_data.matches);
+        return NULL;
+      }
+    }
 
     if (error != ERROR_SUCCESS)
     {
       Py_DECREF(callback_data.matches);
 
-      if (error == ERROR_CALLBACK_ERROR)
-      {
-        return NULL;
-      }
-      else
+      if (error != ERROR_CALLBACK_ERROR)
       {
         handle_error(error, filepath);
 
-#ifdef PROFILING_ENABLED
+        #ifdef PROFILING_ENABLED
         PyObject* exception = PyErr_Occurred();
 
         if (exception != NULL && error == ERROR_SCAN_TIMEOUT)
@@ -1477,10 +1504,10 @@ static PyObject* Rules_match(
               "profiling_info",
               Rules_profiling_info(self, NULL));
         }
-#endif
-
-        return NULL;
+        #endif
       }
+
+      return NULL;
     }
   }
 
@@ -1759,12 +1786,10 @@ static PyObject* yara_compile(
     {
       if (PyDict_Check(externals))
       {
-        if (!process_compile_externals(externals, compiler))
+        if (process_compile_externals(externals, compiler) != ERROR_SUCCESS)
         {
           yr_compiler_destroy(compiler);
-          return PyErr_Format(
-              PyExc_TypeError,
-              "external values must be of type integer, float, boolean or string");
+          return NULL;
         }
       }
       else
