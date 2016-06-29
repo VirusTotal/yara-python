@@ -144,22 +144,22 @@ class BuildCommand(build):
         library_dirs.append('yara/windows/lib')
 
       if building_for_windows:
-        macros.append(('HASH', '1'))
+        macros.append(('HASH_MODULE', '1'))
         libraries.append('libeay%s' % bits)
       elif (has_function('MD5_Init', libraries=['crypto']) and
           has_function('SHA256_Init', libraries=['crypto'])):
-        macros.append(('HASH', '1'))
+        macros.append(('HASH_MODULE', '1'))
         libraries.append('crypto')
       else:
         exclusions.append('yara/libyara/modules/hash.c')
 
       if self.enable_magic:
-        macros.append(('MAGIC', '1'))
+        macros.append(('MAGIC_MODULE', '1'))
       else:
         exclusions.append('yara/libyara/modules/magic.c')
 
       if self.enable_cuckoo:
-        macros.append(('CUCKOO', '1'))
+        macros.append(('CUCKOO_MODULE', '1'))
         if building_for_windows:
           libraries.append('jansson%s' % bits)
         else:
