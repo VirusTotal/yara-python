@@ -1074,7 +1074,14 @@ int process_match_externals(
       return ERROR_INVALID_ARGUMENT;
     }
 
-    if (result != ERROR_SUCCESS)
+    // yr_rules_define_xxx_variable returns ERROR_INVALID_ARGUMENT if the
+    // variable wasn't previously defined in the compilation phase. Ignore
+    // those errors because we don't want the "scan" method being aborted
+    // because of the "externals" dictionary having more keys than those used
+    // during compilation.
+
+    if (result != ERROR_SUCCESS &&
+        result != ERROR_INVALID_ARGUMENT)
     {
       handle_error(result, identifier);
       return result;
