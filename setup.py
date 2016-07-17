@@ -172,12 +172,18 @@ class BuildCommand(build):
     build.run(self)
 
 
+module_version = '3.4.0.0'
+if "bdist_msi" in sys.argv:
+  # bdist_msi does not support the version format "x.y.z.w"
+  # as a work around.
+  module_version, _, _ = module_version.rpartition('.')
+
 with open('README.rst', 'r', 'utf-8') as f:
   readme = f.read()
 
 setup(
     name='yara-python',
-    version='3.4.0.0',
+    version=module_version,
     description='Python interface for YARA',
     long_description=readme,
     license='Apache 2.0',
