@@ -103,7 +103,7 @@ class BuildCommand(build):
       os.chdir(base_dir)
 
     exclusions = ['yara/libyara/modules/pe_utils.c']
-  
+
     if self.plat_name in ('win32','win-amd64'):
       building_for_windows = True
       bits = '64' if self.plat_name == 'win-amd64' else '32'
@@ -177,7 +177,7 @@ with open('README.rst', 'r', 'utf-8') as f:
 
 setup(
     name='yara-python',
-    version='3.4.0.0',
+    version='3.5.0.0',
     description='Python interface for YARA',
     long_description=readme,
     license='Apache 2.0',
