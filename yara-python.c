@@ -1829,9 +1829,16 @@ static PyObject* yara_compile(
     else if (file != NULL)
     {
       fd = dup(PyObject_AsFileDescriptor(file));
-      fh = fdopen(fd, "r");
-      error = yr_compiler_add_file(compiler, fh, NULL, NULL);
-      fclose(fh);
+      if (fd != -1) {
+        fh = fdopen(fd, "r");
+        error = yr_compiler_add_file(compiler, fh, NULL, NULL);
+        fclose(fh);
+      }
+      else {
+        result = PyErr_Format(
+            PyExc_TypeError,
+            "'file' is not a file object");
+      }
     }
     else if (sources_dict != NULL)
     {
