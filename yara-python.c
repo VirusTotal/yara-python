@@ -1650,7 +1650,8 @@ void raise_exception_on_error(
     else
       PyErr_Format(
           YaraSyntaxError,
-          "%s",
+          "line %d: %s",
+          line_number,
           message);
   }
 }
@@ -1675,7 +1676,8 @@ void raise_exception_on_error_or_warning(
     else
       PyErr_Format(
           YaraSyntaxError,
-          "%s",
+          "line %d: %s",
+          line_number,
           message);
   }
   else
@@ -1690,7 +1692,8 @@ void raise_exception_on_error_or_warning(
     else
       PyErr_Format(
           YaraWarningError,
-          "%s",
+          "line %d: %s",
+          line_number,
           message);
   }
 }
