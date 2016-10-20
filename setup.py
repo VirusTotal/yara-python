@@ -15,7 +15,7 @@
 #
 
 from distutils.command.build import build
-from setuptools import setup, Extension
+from setuptools import setup, Command, Extension
 from codecs import open
 
 import distutils.errors
@@ -172,6 +172,39 @@ class BuildCommand(build):
     build.run(self)
 
 
+class UpdateCommand(Command):
+    """Update libyara source.
+
+    This is normally only run by packagers to make a new release.
+    """
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        subprocess.check_call(['git', 'stash'], cwd='yara')
+
+        subprocess.check_call(['git', 'submodule', 'init'])
+        subprocess.check_call(['git', 'submodule', 'update'])
+
+        subprocess.check_call(['git', 'reset', '--hard'], cwd='yara')
+        subprocess.check_call(['git', 'clean', '-x', '-f', '-d'],
+                              cwd='yara')
+        subprocess.check_call(['git', 'checkout', 'master'], cwd='yara')
+        subprocess.check_call(['git', 'pull'], cwd='yara')
+        subprocess.check_call(['git', 'fetch', '--tags'], cwd='yara')
+
+        tag_name = 'tags/v%s' % self.distribution.metadata.version
+        subprocess.check_call(['git', 'checkout', tag_name], cwd='yara')
+
+        subprocess.check_call(['./bootstrap.sh'], cwd='yara')
+        subprocess.check_call(['./configure'], cwd='yara')
+
+
 with open('README.rst', 'r', 'utf-8') as f:
   readme = f.read()
 
@@ -185,7 +218,9 @@ setup(
     author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
     url='https://github.com/VirusTotal/yara-python',
     zip_safe=False,
-    cmdclass={'build': BuildCommand},
+    cmdclass={
+        'build': BuildCommand,
+        'update': UpdateCommand},
     ext_modules=[Extension(
         name='yara',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
