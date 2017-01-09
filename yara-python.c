@@ -1955,7 +1955,7 @@ static PyObject* yara_compile(
       }
       else
       {
-        result = handle_error(ERROR_INSUFICIENT_MEMORY, NULL);
+        result = handle_error(ERROR_INSUFFICIENT_MEMORY, NULL);
       }
     }
 
