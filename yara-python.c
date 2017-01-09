@@ -911,7 +911,7 @@ PyObject* handle_error(
       return PyErr_Format(
         YaraError,
         "access denied");
-    case ERROR_INSUFICIENT_MEMORY:
+    case ERROR_INSUFFICIENT_MEMORY:
       return PyErr_NoMemory();
     case ERROR_COULD_NOT_OPEN_FILE:
       return PyErr_Format(
