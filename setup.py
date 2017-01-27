@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from distutils.command.build import build
+from distutils.command.build_ext import build_ext
 from setuptools import setup, Command, Extension
 from codecs import open
 
@@ -66,26 +66,28 @@ def has_function(function_name, libraries=None):
   return result
 
 
-class BuildCommand(build):
+class BuildCommand(build_ext):
 
-  user_options = build.user_options + [
+  user_options = build_ext.user_options + [
       ('dynamic-linking', None,'link dynamically against libyara'),
       ('enable-cuckoo', None,'enable "cuckoo" module'),
       ('enable-magic', None,'enable "magic" module'),
       ('enable-profiling', None,'enable profiling features')]
 
-  boolean_options = build.boolean_options + [
+  boolean_options = build_ext.boolean_options + [
       'dynamic-linking', 'enable-cuckoo', 'enable-magic', 'enable-profiling']
 
   def initialize_options(self):
-    build.initialize_options(self)
+
+    build_ext.initialize_options(self)
     self.dynamic_linking = None
     self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_profiling = None
 
   def finalize_options(self):
-    build.finalize_options(self)
+
+    build_ext.finalize_options(self)
     if self.enable_magic and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-magic can''t be used with --dynamic-linking')
@@ -102,7 +104,7 @@ class BuildCommand(build):
     if base_dir:
       os.chdir(base_dir)
 
-    exclusions = ['yara/libyara/modules/pe_utils.c']
+    exclusions = []
 
     if self.plat_name in ('win32','win-amd64'):
       building_for_windows = True
@@ -169,7 +171,7 @@ class BuildCommand(build):
           if x.endswith('.c') and x not in exclusions:
             module.sources.append(x)
 
-    build.run(self)
+    build_ext.run(self)
 
 
 class UpdateCommand(Command):
@@ -219,7 +221,7 @@ setup(
     url='https://github.com/VirusTotal/yara-python',
     zip_safe=False,
     cmdclass={
-        'build': BuildCommand,
+        'build_ext': BuildCommand,
         'update': UpdateCommand},
     ext_modules=[Extension(
         name='yara',
