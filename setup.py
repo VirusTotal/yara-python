@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+from distutils.command.build import build
 from distutils.command.build_ext import build_ext
 from setuptools import setup, Command, Extension
 from codecs import open
@@ -28,6 +29,21 @@ import sys
 import tempfile
 import shutil
 import subprocess
+
+
+OPTIONS = [
+   ('dynamic-linking', None, 'link dynamically against libyara'),
+   ('enable-cuckoo', None, 'enable "cuckoo" module'),
+   ('enable-magic', None, 'enable "magic" module'),
+   ('enable-profiling', None, 'enable profiling features')]
+
+
+BOOLEAN_OPTIONS = [
+    'dynamic-linking', 
+    'enable-cuckoo', 
+    'enable-magic', 
+    'enable-profiling']
+
 
 @contextlib.contextmanager
 def muted(*streams):
@@ -66,16 +82,29 @@ def has_function(function_name, libraries=None):
   return result
 
 
-class BuildCommand(build_ext):
+class BuildCommand(build):
 
-  user_options = build_ext.user_options + [
-      ('dynamic-linking', None,'link dynamically against libyara'),
-      ('enable-cuckoo', None,'enable "cuckoo" module'),
-      ('enable-magic', None,'enable "magic" module'),
-      ('enable-profiling', None,'enable profiling features')]
+  user_options = build.user_options + OPTIONS
+  boolean_options = build.boolean_options + BOOLEAN_OPTIONS
 
-  boolean_options = build_ext.boolean_options + [
-      'dynamic-linking', 'enable-cuckoo', 'enable-magic', 'enable-profiling']
+  def initialize_options(self):
+
+    build.initialize_options(self)
+    self.dynamic_linking = None
+    self.enable_magic = None
+    self.enable_cuckoo = None
+    self.enable_profiling = None
+
+  def finalize_options(self):
+    
+    build.finalize_options(self)
+
+
+
+class BuildExtCommand(build_ext):
+
+  user_options = build_ext.user_options + OPTIONS
+  boolean_options = build_ext.boolean_options + BOOLEAN_OPTIONS
 
   def initialize_options(self):
 
@@ -88,6 +117,16 @@ class BuildCommand(build_ext):
   def finalize_options(self):
 
     build_ext.finalize_options(self)
+
+    # If the build_ext command was invoked by the build command, take the
+    # values for these options from the build command.
+    
+    self.set_undefined_options('build',
+        ('dynamic_linking', 'dynamic_linking'),
+        ('enable_magic', 'enable_magic'),
+        ('enable_cuckoo', 'enable_cuckoo'),
+        ('enable_profiling', 'enable_profiling'))
+
     if self.enable_magic and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-magic can''t be used with --dynamic-linking')
@@ -175,36 +214,36 @@ class BuildCommand(build_ext):
 
 
 class UpdateCommand(Command):
-    """Update libyara source.
+  """Update libyara source.
 
-    This is normally only run by packagers to make a new release.
-    """
-    user_options = []
+  This is normally only run by packagers to make a new release.
+  """
+  user_options = []
 
-    def initialize_options(self):
-        pass
+  def initialize_options(self):
+    pass
 
-    def finalize_options(self):
-        pass
+  def finalize_options(self):
+    pass
 
-    def run(self):
-        subprocess.check_call(['git', 'stash'], cwd='yara')
+  def run(self):
+    subprocess.check_call(['git', 'stash'], cwd='yara')
 
-        subprocess.check_call(['git', 'submodule', 'init'])
-        subprocess.check_call(['git', 'submodule', 'update'])
+    subprocess.check_call(['git', 'submodule', 'init'])
+    subprocess.check_call(['git', 'submodule', 'update'])
 
-        subprocess.check_call(['git', 'reset', '--hard'], cwd='yara')
-        subprocess.check_call(['git', 'clean', '-x', '-f', '-d'],
-                              cwd='yara')
-        subprocess.check_call(['git', 'checkout', 'master'], cwd='yara')
-        subprocess.check_call(['git', 'pull'], cwd='yara')
-        subprocess.check_call(['git', 'fetch', '--tags'], cwd='yara')
+    subprocess.check_call(['git', 'reset', '--hard'], cwd='yara')
+    subprocess.check_call(['git', 'clean', '-x', '-f', '-d'], cwd='yara')
 
-        tag_name = 'tags/v%s' % self.distribution.metadata.version
-        subprocess.check_call(['git', 'checkout', tag_name], cwd='yara')
+    subprocess.check_call(['git', 'checkout', 'master'], cwd='yara')
+    subprocess.check_call(['git', 'pull'], cwd='yara')
+    subprocess.check_call(['git', 'fetch', '--tags'], cwd='yara')
 
-        subprocess.check_call(['./bootstrap.sh'], cwd='yara')
-        subprocess.check_call(['./configure'], cwd='yara')
+    tag_name = 'tags/v%s' % self.distribution.metadata.version
+    subprocess.check_call(['git', 'checkout', tag_name], cwd='yara')
+
+    subprocess.check_call(['./bootstrap.sh'], cwd='yara')
+    subprocess.check_call(['./configure'], cwd='yara')
 
 
 with open('README.rst', 'r', 'utf-8') as f:
@@ -221,7 +260,8 @@ setup(
     url='https://github.com/VirusTotal/yara-python',
     zip_safe=False,
     cmdclass={
-        'build_ext': BuildCommand,
+        'build': BuildCommand,
+        'build_ext': BuildExtCommand,
         'update': UpdateCommand},
     ext_modules=[Extension(
         name='yara',
