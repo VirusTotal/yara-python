@@ -442,10 +442,6 @@ PyObject* convert_object_to_python(
       // Do nothing with functions...
       break;
 
-    case OBJECT_TYPE_REGEXP:
-      // Fairly certain you can't have these. :)
-      break;
-
     case OBJECT_TYPE_DICTIONARY:
       result = convert_dictionary_to_python((YR_OBJECT_DICTIONARY*) object);
       break;
