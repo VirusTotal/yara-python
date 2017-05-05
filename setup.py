@@ -39,9 +39,9 @@ OPTIONS = [
 
 
 BOOLEAN_OPTIONS = [
-    'dynamic-linking', 
-    'enable-cuckoo', 
-    'enable-magic', 
+    'dynamic-linking',
+    'enable-cuckoo',
+    'enable-magic',
     'enable-profiling']
 
 
@@ -96,7 +96,7 @@ class BuildCommand(build):
     self.enable_profiling = None
 
   def finalize_options(self):
-    
+
     build.finalize_options(self)
 
 
@@ -120,7 +120,7 @@ class BuildExtCommand(build_ext):
 
     # If the build_ext command was invoked by the build command, take the
     # values for these options from the build command.
-    
+
     self.set_undefined_options('build',
         ('dynamic_linking', 'dynamic_linking'),
         ('enable_magic', 'enable_magic'),
