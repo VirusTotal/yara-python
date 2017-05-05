@@ -159,6 +159,8 @@ class BuildExtCommand(build_ext):
       building_for_osx = True
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
+      module.include_dirs.append('/usr/local/include')
+      module.library_dirs.append('/usr/local/lib')
     else:
       building_for_osx = False
 
