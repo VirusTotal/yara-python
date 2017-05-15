@@ -178,11 +178,20 @@ class BuildExtCommand(build_ext):
       module.libraries.append('yara')
     else:
       if building_for_windows:
-        module.library_dirs.append('yara/windows/lib')
+        library_path = os.path.join('yara', 'windows', 'lib')
+        module.library_dirs.append(library_path)
 
       if building_for_windows:
-        module.define_macros.append(('HASH_MODULE', '1'))
-        module.libraries.append('libeay%s' % bits)
+        # Check if the OpenSSL libeay32.dll or libeay64.dll is available.
+        library_name = 'libeay%s' % bits
+        library_file = os.path.join(
+            'yara', 'windows', 'lib', '%s.dll' % library_name)
+        if os.path.isfile(library_file):
+          module.define_macros.append(('HASH_MODULE', '1'))
+          module.libraries.append(library_name)
+        else:
+          exclusions.append('yara/libyara/modules/hash.c')
+
       elif (has_function('MD5_Init', libraries=['crypto']) and
           has_function('SHA256_Init', libraries=['crypto'])):
         module.define_macros.append(('HASH_MODULE', '1'))

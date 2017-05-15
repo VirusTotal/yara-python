@@ -1,0 +1,18 @@
+# Files to ignore by git.
+
+# Back-up files
+*~
+*.swp
+
+# Generic auto-generated build files
+*.pyc
+*.pyo
+
+# Specific auto-generated build files
+/.eggs
+/.tox
+/__pycache__
+/build
+/dist
+/MANIFEST
+/yara_python.egg-info
