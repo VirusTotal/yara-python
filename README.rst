@@ -1,3 +1,6 @@
+[![Travis build status](https://travis-ci.org/VirusTotal/yara-python.svg)](https://travis-ci.org/VirusTotal/yara-python)
+[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/gidnb9ulj3rje5s2?svg=true)](https://ci.appveyor.com/project/plusvic/yara-python)
+
 yara-python
 ===========
 
