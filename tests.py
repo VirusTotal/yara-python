@@ -837,10 +837,12 @@ class TestYara(unittest.TestCase):
         m = r.match(data="dummy")
 
         self.assertTrue(len(m) == 2)
-        self.assertTrue(m[0] < m[1])
-        self.assertTrue(m[0] != m[1])
-        self.assertFalse(m[0] > m[1])
-        self.assertFalse(m[0] == m[1])
+
+        if sys.version_info[0] < 3:
+          self.assertTrue(m[0] < m[1])
+          self.assertTrue(m[0] != m[1])
+          self.assertFalse(m[0] > m[1])
+          self.assertFalse(m[0] == m[1])
 
     def testComments(self):
 
@@ -927,8 +929,13 @@ class TestYara(unittest.TestCase):
 
         r1.match(data='', modules_callback=callback)
 
-        self.assertTrue(data['constants']['foo'] == 'foo')
-        self.assertTrue(data['constants']['empty'] == '')
+        if sys.version_info[0] >= 3:
+          self.assertTrue(data['constants']['foo'] == bytes('foo', 'utf-8'))
+          self.assertTrue(data['constants']['empty'] == bytes('', 'utf-8'))
+        else:
+          self.assertTrue(data['constants']['foo'] == 'foo')
+          self.assertTrue(data['constants']['empty'] == '')
+
         self.assertTrue(data['constants']['one'] == 1)
         self.assertTrue(data['constants']['two'] == 2)
 
