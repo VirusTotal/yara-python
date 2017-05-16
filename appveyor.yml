@@ -93,7 +93,7 @@ clone_script:
 
 build_script:
   # Build the compiled extension
-  - "%CMD_IN_ENV% python setup.py build"
+  - "%CMD_IN_ENV% python setup.py build --enable-cuckoo"
 
 test_script:
   # Run the project tests
