@@ -7,6 +7,23 @@ environment:
 
   matrix:
 
+    # Python versions not pre-installed
+
+    # Python 2.6.6 is the latest Python 2.6 with a Windows installer
+    # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
+
+    - PYTHON: "C:\\Python266"
+      PYTHON_VERSION: "2.6.6"
+      PYTHON_ARCH: "32"
+      JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 9 2008"
+
+    - PYTHON: "C:\\Python266-x64"
+      PYTHON_VERSION: "2.6.6"
+      PYTHON_ARCH: "64"
+      JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 9 2008 Win64"
+
     # Pre-installed Python versions, which Appveyor may upgrade to
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
@@ -47,22 +64,17 @@ environment:
       JANSSON_VERSION: "2.10"
       VS: "Visual Studio 10 2010 Win64"
 
-    # Python versions not pre-installed
-
-    # Python 2.6.6 is the latest Python 2.6 with a Windows installer
-    # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
-
-    - PYTHON: "C:\\Python266"
-      PYTHON_VERSION: "2.6.6"
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.x" # currently 3.5.3
       PYTHON_ARCH: "32"
       JANSSON_VERSION: "2.10"
-      VS: "Visual Studio 9 2008"
+      VS: "Visual Studio 14 2015"
 
-    - PYTHON: "C:\\Python266-x64"
-      PYTHON_VERSION: "2.6.6"
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.x" # currently 3.5.3
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
-      VS: "Visual Studio 9 2008 Win64"
+      VS: "Visual Studio 14 2015 Win64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -109,16 +121,16 @@ install:
   - call appveyor\setup_x64.bat
 
   # Download and build jansson library
-  - cd ..
+  - pushd ..
   - ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v$env:JANSSON_VERSION.zip" -OutFile "jansson.zip"
   - ps: Expand-Archive jansson.zip -DestinationPath .
   - cd jansson-%JANSSON_VERSION%
   - md build
   - cd build
-  - cmake -DJANSSON_BUILD_DOCS=OFF -G "%VS%" ..
+  - cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_WITHOUT_TESTS=ON -G "%VS%" ..
   - cmake --build . --config Release
   - ctest --output-on-failure
-  - cd ../../yara-python
+  - popd
 
 
 clone_script:
