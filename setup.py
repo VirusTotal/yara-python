@@ -161,9 +161,9 @@ class BuildExtCommand(build_ext):
 
     if self.plat_name in ('win32','win-amd64'):
       building_for_windows = True
-      bits = '64' if self.plat_name == 'win-amd64' else '32'
+      #bits = '64' if self.plat_name == 'win-amd64' else '32'
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS','1'))
-      module.include_dirs.append('yara/windows/include')
+      #module.include_dirs.append('yara/windows/include')
       module.libraries.append('advapi32')
       module.libraries.append('user32')
     else:
@@ -191,12 +191,12 @@ class BuildExtCommand(build_ext):
     if self.dynamic_linking:
       module.libraries.append('yara')
     else:
-      if building_for_windows:
-        module.library_dirs.append('yara/windows/lib')
+      #if building_for_windows:
+      #  module.library_dirs.append('yara/windows/lib')
 
       if building_for_windows:
         module.define_macros.append(('HASH_MODULE', '1'))
-        module.libraries.append('libeay%s' % bits)
+        module.libraries.append('libeay32')
       elif (has_function('MD5_Init', libraries=['crypto']) and
           has_function('SHA256_Init', libraries=['crypto'])):
         module.define_macros.append(('HASH_MODULE', '1'))
