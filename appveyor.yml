@@ -21,7 +21,7 @@ environment:
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
-      VS: "Visual Studio 9 2008"
+      VS: "Visual Studio 9 2008 Win64"
 
     - PYTHON: "C:\\Python33"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
@@ -33,7 +33,7 @@ environment:
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
-      VS: "Visual Studio 10 2010"
+      VS: "Visual Studio 10 2010 Win64"
 
     - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
@@ -45,7 +45,7 @@ environment:
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
-      VS: "Visual Studio 10 2010"
+      VS: "Visual Studio 10 2010 Win64"
 
     # Python versions not pre-installed
 
@@ -62,7 +62,7 @@ environment:
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
-      VS: "Visual Studio 9 2008"
+      VS: "Visual Studio 9 2008 Win64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -110,8 +110,8 @@ install:
   - cd jansson-%JANSSON_VERSION%
   - md build
   - cd build
-  - cmake -DJANSSON_BUILD_DOCS=OFF -G "%VS%" ..
-  - cmake --build . --config Release
+  - %CMD_IN_ENV% cmake -DJANSSON_BUILD_DOCS=OFF -G "%VS%" ..
+  - %CMD_IN_ENV% cmake --build . --config Release
   - ctest --output-on-failure
   - cd ../../yara-python
 
