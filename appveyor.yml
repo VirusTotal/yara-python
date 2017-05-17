@@ -131,7 +131,7 @@ build_script:
   # Build the compiled extension
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo
     -L../jansson-%JANSSON_VERSION%/build/lib/Release:c:/OpenSSL-Win%PYTHON_ARCH%/lib
-    -I../jansson-%JANSSON_VERSION%/build/include;c:/OpenSSL-Win%PYTHON_ARCH%/include"
+    -I../jansson-%JANSSON_VERSION%/build/include:c:/OpenSSL-Win%PYTHON_ARCH%/include"
 
 test_script:
   # Run the project tests
