@@ -15,31 +15,37 @@ environment:
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "32"
       JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 9 2008"
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 9 2008"
 
     - PYTHON: "C:\\Python33"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "32"
       JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 10 2010"
 
     - PYTHON: "C:\\Python33-x64"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 10 2010"
 
     - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "32"
       JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 10 2010"
 
     - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "64"
       JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 10 2010"
 
     # Python versions not pre-installed
 
@@ -49,10 +55,14 @@ environment:
     - PYTHON: "C:\\Python266"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "32"
+      JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 9 2008"
 
     - PYTHON: "C:\\Python266-x64"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "64"
+      JANSSON_VERSION: "2.10"
+      VS: "Visual Studio 9 2008"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
