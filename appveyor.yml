@@ -14,26 +14,32 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "32"
+      JANSSON_VERSION: "2.10"
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "64"
+      JANSSON_VERSION: "2.10"
 
     - PYTHON: "C:\\Python33"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "32"
+      JANSSON_VERSION: "2.10"
 
     - PYTHON: "C:\\Python33-x64"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "64"
+      JANSSON_VERSION: "2.10"
 
     - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "32"
+      JANSSON_VERSION: "2.10"
 
     - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "64"
+      JANSSON_VERSION: "2.10"
 
     # Python versions not pre-installed
 
@@ -87,13 +93,26 @@ install:
   # target Python version and architecture
   - "%CMD_IN_ENV% pip install nose wheel"
 
+  # Download and build jansson library
+  - cd ..
+  -ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v%JANSSON_VERSION%.zip" -OutFile "jansson.zip"
+  -ps: Expand-Archive jansson.zip -DestinationPath .
+  - cd jansson-%JANSSON_VERSION%
+  - md build
+  - cd build
+  - cmake -DJANSSON_BUILD_DOCS=OFF -G "%VS%" ..
+  - cmake --build . --config Release
+  - ctest --output-on-failure
+  - cd ../../yara-python
+
+
 clone_script:
 - cmd: git clone -q --recursive --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
 - cmd: git checkout -qf %APPVEYOR_REPO_COMMIT%
 
 build_script:
   # Build the compiled extension
-  - "%CMD_IN_ENV% python setup.py build --enable-cuckoo"
+  - "%CMD_IN_ENV% python setup.py build --enable-cuckoo --library-dir=../jansson-%JANSSON_VERSION%/build/lib/Release --include-dir=../jansson-%JANSSON_VERSION%/build/include"
 
 test_script:
   # Run the project tests

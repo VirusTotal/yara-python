@@ -35,7 +35,9 @@ OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
    ('enable-magic', None, 'enable "magic" module'),
-   ('enable-profiling', None, 'enable profiling features')]
+   ('enable-profiling', None, 'enable profiling features'),
+   ('library-dir=', None, 'library directory'),
+   ('include-dir=', None, 'include directory')]
 
 
 BOOLEAN_OPTIONS = [
@@ -94,6 +96,8 @@ class BuildCommand(build):
     self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_profiling = None
+    self.library_dir = None
+    self.include_dir = None
 
   def finalize_options(self):
 
@@ -113,6 +117,8 @@ class BuildExtCommand(build_ext):
     self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_profiling = None
+    self.library_dir = None
+    self.include_dir = None
 
   def finalize_options(self):
 
@@ -125,7 +131,9 @@ class BuildExtCommand(build_ext):
         ('dynamic_linking', 'dynamic_linking'),
         ('enable_magic', 'enable_magic'),
         ('enable_cuckoo', 'enable_cuckoo'),
-        ('enable_profiling', 'enable_profiling'))
+        ('enable_profiling', 'enable_profiling'),
+        ('library_dir', 'library_dir'),
+        ('include_dir', 'include_dir'))
 
     if self.enable_magic and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
@@ -144,6 +152,12 @@ class BuildExtCommand(build_ext):
       os.chdir(base_dir)
 
     exclusions = []
+
+    if self.library_dir:
+      module.library_dirs.append(self.library_dir)
+
+    if self.include_dir:
+      module.include_dirs.append(self.include_dir)
 
     if self.plat_name in ('win32','win-amd64'):
       building_for_windows = True
