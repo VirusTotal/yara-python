@@ -138,7 +138,7 @@ after_build:
 
 test_script:
   # Run the project tests
-  - "%PYTHON%\\python setup.py test"
+  - "%PYTHON%\\python tests.py"
 
 after_test:
   # If tests are successful, create binary packages for the project.
