@@ -138,7 +138,9 @@ clone_script:
 
 build_script:
   # Build the compiled extension
-  - "%CMD_IN_ENV% python setup.py build --enable-cuckoo --library-dir=../jansson-%JANSSON_VERSION%/build/lib/Release --include-dir=../jansson-%JANSSON_VERSION%/build/include"
+  - "%CMD_IN_ENV% python setup.py build --enable-cuckoo
+    --library-directories=\"../jansson-%JANSSON_VERSION%/build/lib/Release;c:/OpenSSL-Win%PYTHON_ARCH%/lib\"
+    --include-directories=\"../jansson-%JANSSON_VERSION%/build/include;c:/OpenSSL-Win%PYTHON_ARCH%/include\""
 
 test_script:
   # Run the project tests
