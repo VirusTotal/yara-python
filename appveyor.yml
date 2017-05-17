@@ -110,8 +110,8 @@ install:
   - cd jansson-%JANSSON_VERSION%
   - md build
   - cd build
-  - %CMD_IN_ENV% cmake -DJANSSON_BUILD_DOCS=OFF -G "%VS%" ..
-  - %CMD_IN_ENV% cmake --build . --config Release
+  - "%CMD_IN_ENV% cmake -DJANSSON_BUILD_DOCS=OFF -G \"%VS%\" .."
+  - "%CMD_IN_ENV% cmake --build . --config Release"
   - ctest --output-on-failure
   - cd ../../yara-python
 
