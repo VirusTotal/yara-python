@@ -95,8 +95,8 @@ install:
 
   # Download and build jansson library
   - cd ..
-  -ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v%JANSSON_VERSION%.zip" -OutFile "jansson.zip"
-  -ps: Expand-Archive jansson.zip -DestinationPath .
+  - ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v%JANSSON_VERSION%.zip" -OutFile "jansson.zip"
+  - ps: Expand-Archive jansson.zip -DestinationPath .
   - cd jansson-%JANSSON_VERSION%
   - md build
   - cd build
