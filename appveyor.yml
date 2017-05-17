@@ -129,7 +129,6 @@ install:
   - cd build
   - cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_WITHOUT_TESTS=ON -G "%VS%" ..
   - cmake --build . --config Release
-  - ctest --output-on-failure
   - popd
 
 
