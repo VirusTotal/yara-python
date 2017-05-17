@@ -103,6 +103,11 @@ install:
   # target Python version and architecture
   - "%CMD_IN_ENV% pip install nose wheel"
 
+  # This is workaround for solving an issue caused by CMake not finding an
+  # appropriate compilet for Visual Studio 9 2008 Win64. This workaround was
+  # copied from: https://github.com/conda/conda-build/blob/master/appveyor.yml
+  - call appveyor\setup_x64.bat
+
   # Download and build jansson library
   - cd ..
   - ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v$env:JANSSON_VERSION.zip" -OutFile "jansson.zip"
