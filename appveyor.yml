@@ -121,7 +121,7 @@ install:
   - call appveyor\setup_x64.bat
 
   # Download and build jansson library
-  - pushd ..
+  - cd ..
   - ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v$env:JANSSON_VERSION.zip" -OutFile "jansson.zip"
   - ps: Expand-Archive jansson.zip -DestinationPath .
   - cd jansson-%JANSSON_VERSION%
@@ -129,7 +129,7 @@ install:
   - cd build
   - cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_WITHOUT_TESTS=ON -G "%VS%" ..
   - cmake --build . --config Release
-  - popd
+  - cd ../../yara-python
 
 
 clone_script:
