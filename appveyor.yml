@@ -133,9 +133,12 @@ build_script:
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;c:/OpenSSL-Win%PYTHON_ARCH%/lib
     -I../jansson-%JANSSON_VERSION%/build/include;c:/OpenSSL-Win%PYTHON_ARCH%/include"
 
+after_build:
+  - %PYTHON%\\python setup.py install
+
 test_script:
   # Run the project tests
-  - python setup.py test
+  - %PYTHON%\\python setup.py test
 
 after_test:
   # If tests are successful, create binary packages for the project.
