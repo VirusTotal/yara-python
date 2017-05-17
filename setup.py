@@ -211,10 +211,7 @@ class BuildExtCommand(build_ext):
 
       if self.enable_cuckoo:
         module.define_macros.append(('CUCKOO_MODULE', '1'))
-        if building_for_windows:
-          module.libraries.append('jansson%s' % bits)
-        else:
-          module.libraries.append('jansson')
+        module.libraries.append('jansson')
       else:
         exclusions.append('yara/libyara/modules/cuckoo.c')
 
