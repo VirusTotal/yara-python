@@ -142,6 +142,9 @@ build_script:
     --library-directories=\"../jansson-%JANSSON_VERSION%/build/lib/Release;c:/OpenSSL-Win%PYTHON_ARCH%/lib\"
     --include-directories=\"../jansson-%JANSSON_VERSION%/build/include;c:/OpenSSL-Win%PYTHON_ARCH%/include\""
 
+after_build:
+  - python setup.py install
+
 test_script:
   # Run the project tests
   - python tests.py
