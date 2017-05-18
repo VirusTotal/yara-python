@@ -13,69 +13,62 @@ environment:
     # Python 2.6.6 is the latest Python 2.6 with a Windows installer
     # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
 
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python266"
+    - PYTHON: "C:\\Python266"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "32"
+      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
       VS: "Visual Studio 9 2008"
 
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python266-x64"
+    - PYTHON: "C:\\Python266-x64"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "64"
+      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
       VS: "Visual Studio 9 2008 Win64"
 
     # Pre-installed Python versions, which Appveyor may upgrade to
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.13
-      PYTHON_ARCH: "32"
-      VS: "Visual Studio 9 2008"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.13
-      PYTHON_ARCH: "64"
-      VS: "Visual Studio 9 2008 Win64"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python33"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "32"
-      VS: "Visual Studio 10 2010"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python33-x64"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "64"
-      VS: "Visual Studio 10 2010 Win64"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.4
-      PYTHON_ARCH: "32"
-      VS: "Visual Studio 10 2010"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
-      PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.4
-      PYTHON_ARCH: "64"
-      VS: "Visual Studio 10 2010 Win64"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.x" # currently 3.5.3
-      PYTHON_ARCH: "32"
-      VS: "Visual Studio 14 2015"
-
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.x" # currently 3.5.3
-      PYTHON_ARCH: "64"
-      VS: "Visual Studio 14 2015 Win64"
+#    - PYTHON: "C:\\Python27"
+#      PYTHON_VERSION: "2.7.x" # currently 2.7.13
+#      PYTHON_ARCH: "32"
+#      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
+#      VS: "Visual Studio 9 2008"
+#
+#    - PYTHON: "C:\\Python27-x64"
+#      PYTHON_VERSION: "2.7.x" # currently 2.7.13
+#      PYTHON_ARCH: "64"
+#      VS: "Visual Studio 9 2008 Win64"
+#
+#    - PYTHON: "C:\\Python33"
+#      PYTHON_VERSION: "3.3.x" # currently 3.3.5
+#      PYTHON_ARCH: "32"
+#      VS: "Visual Studio 10 2010"
+#
+#    - PYTHON: "C:\\Python33-x64"
+#      PYTHON_VERSION: "3.3.x" # currently 3.3.5
+#      PYTHON_ARCH: "64"
+#      VS: "Visual Studio 10 2010 Win64"
+#
+#    - PYTHON: "C:\\Python34"
+#      PYTHON_VERSION: "3.4.x" # currently 3.4.4
+#      PYTHON_ARCH: "32"
+#      VS: "Visual Studio 10 2010"
+#
+#    - PYTHON: "C:\\Python34-x64"
+#      PYTHON_VERSION: "3.4.x" # currently 3.4.4
+#      PYTHON_ARCH: "64"
+#      VS: "Visual Studio 10 2010 Win64"
+#
+#    - PYTHON: "C:\\Python35"
+#      PYTHON_VERSION: "3.5.x" # currently 3.5.3
+#      PYTHON_ARCH: "32"
+#      VS: "Visual Studio 14 2015"
+#
+#    - PYTHON: "C:\\Python35-x64"
+#      PYTHON_VERSION: "3.5.x" # currently 3.5.3
+#      PYTHON_ARCH: "64"
+#      VS: "Visual Studio 14 2015 Win64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -113,6 +106,11 @@ install:
   # target Python version and architecture
   - "%CMD_IN_ENV% pip install wheel"
 
+  - cd ..
+  - ps: Invoke-WebRequest "https://www.npcglib.org/~stathis/downloads/$env:OPENSSL_LIB.7z" -OutFile "openssl.7z"
+  - 7z x openssl.7z
+  - cd yara-python
+
   # This is workaround for solving an issue caused by CMake not finding an
   # appropriate compilet for Visual Studio 9 2008 Win64. This workaround was
   # copied from: https://github.com/conda/conda-build/blob/master/appveyor.yml
@@ -137,8 +135,8 @@ clone_script:
 build_script:
   # Build the compiled extension
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo
-    -L../jansson-%JANSSON_VERSION%/build/lib/Release;c:/OpenSSL-Win%PYTHON_ARCH%/lib/VC/static
-    -I../jansson-%JANSSON_VERSION%/build/include;c:/OpenSSL-Win%PYTHON_ARCH%/include
+    -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/lib
+    -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
     -llibeay32MD"
 
 after_build:
