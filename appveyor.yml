@@ -137,7 +137,7 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/lib
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
-    -llibeay32MD"
+    -llibeay32MT"
 
 after_build:
   - "%PYTHON%\\python setup.py install"
