@@ -182,7 +182,7 @@ class BuildExtCommand(build_ext):
 
       if building_for_windows:
         module.define_macros.append(('HASH_MODULE', '1'))
-        module.libraries.append('libeay32')
+        #module.libraries.append('libeay32')
       elif (has_function('MD5_Init', libraries=['crypto']) and
           has_function('SHA256_Init', libraries=['crypto'])):
         module.define_macros.append(('HASH_MODULE', '1'))
