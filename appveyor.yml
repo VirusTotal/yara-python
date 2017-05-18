@@ -13,7 +13,8 @@ environment:
     # Python 2.6.6 is the latest Python 2.6 with a Windows installer
     # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
 
-    - PYTHON: "C:\\Python266"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python266"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "32"
       VS: "Visual Studio 9 2008"
@@ -27,7 +28,8 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - PYTHON: "C:\\Python27"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "32"
       VS: "Visual Studio 9 2008"
@@ -37,32 +39,38 @@ environment:
       PYTHON_ARCH: "64"
       VS: "Visual Studio 9 2008 Win64"
 
-    - PYTHON: "C:\\Python33"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python33"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "32"
       VS: "Visual Studio 10 2010"
 
-    - PYTHON: "C:\\Python33-x64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python33-x64"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "64"
       VS: "Visual Studio 10 2010 Win64"
 
-    - PYTHON: "C:\\Python34"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "32"
       VS: "Visual Studio 10 2010"
 
-    - PYTHON: "C:\\Python34-x64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "64"
       VS: "Visual Studio 10 2010 Win64"
 
-    - PYTHON: "C:\\Python35"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x" # currently 3.5.3
       PYTHON_ARCH: "32"
       VS: "Visual Studio 14 2015"
 
-    - PYTHON: "C:\\Python35-x64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.x" # currently 3.5.3
       PYTHON_ARCH: "64"
       VS: "Visual Studio 14 2015 Win64"
@@ -81,6 +89,8 @@ install:
   # Install Python (from the official .msi of http://python.org) and pip when
   # not already installed.
   - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
+
+  - "echo %APPVEYOR_BUILD_WORKER_IMAGE%"
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
