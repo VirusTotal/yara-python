@@ -16,13 +16,13 @@ environment:
     - PYTHON: "C:\\Python266"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008"
 
     - PYTHON: "C:\\Python266-x64"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008 Win64"
 
     # Pre-installed Python versions, which Appveyor may upgrade to
@@ -32,49 +32,49 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008"
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2008"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008 Win64"
 
     - PYTHON: "C:\\Python33"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2010"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
       VS: "Visual Studio 10 2010"
 
     - PYTHON: "C:\\Python33-x64"
       PYTHON_VERSION: "3.3.x" # currently 3.3.5
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2010"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
       VS: "Visual Studio 10 2010 Win64"
 
     - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2010"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
       VS: "Visual Studio 10 2010"
 
     - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4.x" # currently 3.4.4
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2010"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
       VS: "Visual Studio 10 2010 Win64"
 
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x" # currently 3.5.3
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2013"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
       VS: "Visual Studio 14 2015"
 
     - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.x" # currently 3.5.3
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.0.2k-vs2013"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
       VS: "Visual Studio 14 2015 Win64"
 
 install:
