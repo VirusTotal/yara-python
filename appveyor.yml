@@ -19,7 +19,8 @@ environment:
       PYTHON_ARCH: "32"
       VS: "Visual Studio 9 2008"
 
-    - PYTHON: "C:\\Python266-x64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python266-x64"
       PYTHON_VERSION: "2.6.6"
       PYTHON_ARCH: "64"
       VS: "Visual Studio 9 2008 Win64"
@@ -34,7 +35,8 @@ environment:
       PYTHON_ARCH: "32"
       VS: "Visual Studio 9 2008"
 
-    - PYTHON: "C:\\Python27-x64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+      PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.x" # currently 2.7.13
       PYTHON_ARCH: "64"
       VS: "Visual Studio 9 2008 Win64"
@@ -135,7 +137,7 @@ clone_script:
 build_script:
   # Build the compiled extension
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo
-    -L../jansson-%JANSSON_VERSION%/build/lib/Release;c:/OpenSSL-Win%PYTHON_ARCH%/lib/VC
+    -L../jansson-%JANSSON_VERSION%/build/lib/Release;c:/OpenSSL-Win%PYTHON_ARCH%/lib/VC/static
     -I../jansson-%JANSSON_VERSION%/build/include;c:/OpenSSL-Win%PYTHON_ARCH%/include
     -llibeay32MD"
 
