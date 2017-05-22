@@ -206,6 +206,7 @@ class BuildExtCommand(build_ext):
 
       if self.enable_magic:
         module.define_macros.append(('MAGIC_MODULE', '1'))
+        module.libraries.append('magic')
       else:
         exclusions.append('yara/libyara/modules/magic.c')
 
