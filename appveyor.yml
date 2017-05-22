@@ -151,14 +151,14 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
-    -llibcryptoMT"
+    -llibcryptoMT & python setup.py install"
 
 after_build:
-  - "%PYTHON%\\python setup.py install"
+  - "%CMD_IN_ENV% python setup.py install"
 
 test_script:
   # Run the project tests
-  - "%PYTHON%\\python tests.py"
+  - "%CMD_IN_ENV% python tests.py"
 
 after_test:
   # If tests are successful, create binary packages for the project.
