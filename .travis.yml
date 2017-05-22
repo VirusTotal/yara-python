@@ -12,7 +12,8 @@ before_install:
   - sudo apt-get install libmagic-dev libjansson-dev
 
 install:
-  - python setup.py install --enable-magic --enable-cuckoo
+  - python setup.py build --enable-magic --enable-cuckoo
+  - python setup.py install
 
 script:
   - python tests.py
