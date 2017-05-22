@@ -10,10 +10,10 @@ python:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y libmagic-dev libjansson-dev
+  - sudo apt-get install -y libmagic-dev
 
 install:
-  - python setup.py build_ext --enable-magic --enable-cuckoo -I/usr/include -L/usr/lib
+  - python setup.py build --enable-magic --enable-dotnet
   - python setup.py install
 
 script:
