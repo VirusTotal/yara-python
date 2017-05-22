@@ -171,7 +171,9 @@ class BuildExtCommand(build_ext):
 
     if building_for_windows:
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
+      module.libraries.append('kernel32')
       module.libraries.append('advapi32')
+      module.libraries.append('user32')
       module.libraries.append('crypt32')
       module.libraries.append('ws2_32')
 
