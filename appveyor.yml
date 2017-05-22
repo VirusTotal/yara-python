@@ -152,7 +152,7 @@ build_script:
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
     -D_CRT_SECURE_NO_WARNINGS -DHASH_MODULE -DHAVE_LIBCRYPTO
-    -llibcryptoMT"
+    -llibcryptoMT -ladvapi32 -lws2_32 -lcrypt32"
 
 after_build:
   - "%CMD_IN_ENV% python setup.py install"
