@@ -180,7 +180,7 @@ class BuildExtCommand(build_ext):
     if self.dynamic_linking:
       module.libraries.append('yara')
     else:
-      if not ('HASH_MODULE', '1') in self.define:
+      if self.define and not ('HASH_MODULE', '1') in self.define:
         if (has_function('MD5_Init', libraries=['crypto']) and
             has_function('SHA256_Init', libraries=['crypto'])):
           module.define_macros.append(('HASH_MODULE', '1'))
