@@ -158,6 +158,12 @@ class BuildExtCommand(build_ext):
     else:
       building_for_windows = False
 
+    for define in self.define or []:
+      module.define_macros.append(define)
+
+    for library in self.libraries or []:
+      module.libraries.append(library)
+
     if 'macosx' in self.plat_name:
       building_for_osx = True
       module.include_dirs.append('/opt/local/include')
