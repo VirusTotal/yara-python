@@ -153,25 +153,33 @@ class BuildExtCommand(build_ext):
 
     exclusions = []
 
-    if self.plat_name in ('win32','win-amd64'):
-      building_for_windows = True
-    else:
-      building_for_windows = False
-
     for define in self.define or []:
       module.define_macros.append(define)
 
     for library in self.libraries or []:
       module.libraries.append(library)
 
+    if self.plat_name in ('win32','win-amd64'):
+      building_for_windows = True
+    else:
+      building_for_windows = False
+
     if 'macosx' in self.plat_name:
       building_for_osx = True
+    else:
+      building_for_osx = False
+
+    if building_for_windows:
+      module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
+      module.libraries.append('advapi32')
+      module.libraries.append('crypt32')
+      module.libraries.append('ws2_32')
+
+    if building_for_osx:
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
-    else:
-      building_for_osx = False
 
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
@@ -186,7 +194,7 @@ class BuildExtCommand(build_ext):
     if self.dynamic_linking:
       module.libraries.append('yara')
     else:
-      if self.define and not ('HASH_MODULE', '1') in self.define:
+      if not self.define or not ('HASH_MODULE', '1') in self.define:
         if (has_function('MD5_Init', libraries=['crypto']) and
             has_function('SHA256_Init', libraries=['crypto'])):
           module.define_macros.append(('HASH_MODULE', '1'))

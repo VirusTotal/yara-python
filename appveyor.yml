@@ -151,8 +151,8 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
-    --define _CRT_SECURE_NO_WARNINGS --define HASH_MODULE --define DHAVE_LIBCRYPTO
-    -llibcryptoMT -ladvapi32 -lws2_32 -lcrypt32"
+    -DHASH_MODULE -DHAVE_LIBCRYPTO
+    -llibcryptoMT"
 
 after_build:
   - "%CMD_IN_ENV% python setup.py install"
