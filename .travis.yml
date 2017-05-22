@@ -8,9 +8,12 @@ python:
   - "3.5"
   - "3.6"
 
-install:
+before_install:
+  - sudo apt-get -qq update
   - sudo apt-get install -y libmagic-dev libjansson-dev
-  - python setup.py build --enable-magic --enable-cuckoo
+
+install:
+  - python setup.py build --enable-magic --enable-cuckoo -I/usr/include -L/usr/lib
   - python setup.py install
 
 script:
