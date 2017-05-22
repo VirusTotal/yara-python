@@ -148,9 +148,10 @@ clone_script:
 
 build_script:
   # Build the compiled extension
-  - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo
+  - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
+    -D_CRT_SECURE_NO_WARNINGS -DHASH_MODULE -DHAVE_LIBCRYPTO
     -llibcryptoMT"
 
 after_build:

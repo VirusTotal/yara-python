@@ -35,6 +35,7 @@ OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
    ('enable-magic', None, 'enable "magic" module'),
+   ('enable-dotnet', None, 'enable "dotnet" module'),
    ('enable-profiling', None, 'enable profiling features')]
 
 
@@ -42,6 +43,7 @@ BOOLEAN_OPTIONS = [
     'dynamic-linking',
     'enable-cuckoo',
     'enable-magic',
+    'enable-dotnet',
     'enable-profiling']
 
 
@@ -93,6 +95,7 @@ class BuildCommand(build):
     self.dynamic_linking = None
     self.enable_magic = None
     self.enable_cuckoo = None
+    self.enable_dotnet = None
     self.enable_profiling = None
 
   def finalize_options(self):
@@ -112,6 +115,7 @@ class BuildExtCommand(build_ext):
     self.dynamic_linking = None
     self.enable_magic = None
     self.enable_cuckoo = None
+    self.enable_dotnet = None
     self.enable_profiling = None
 
   def finalize_options(self):
@@ -125,6 +129,7 @@ class BuildExtCommand(build_ext):
         ('dynamic_linking', 'dynamic_linking'),
         ('enable_magic', 'enable_magic'),
         ('enable_cuckoo', 'enable_cuckoo'),
+        ('enable_dotnet', 'enable_dotnet'),
         ('enable_profiling', 'enable_profiling'))
 
     if self.enable_magic and self.dynamic_linking:
@@ -133,6 +138,9 @@ class BuildExtCommand(build_ext):
     if self.enable_cuckoo and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-cuckoo can''t be used with --dynamic-linking')
+    if self.enable_dotnet and self.dynamic_linking:
+      raise distutils.errors.DistutilsOptionError(
+          '--enable-dotnet can''t be used with --dynamic-linking')
 
   def run(self):
     """Execute the build command."""
@@ -147,11 +155,6 @@ class BuildExtCommand(build_ext):
 
     if self.plat_name in ('win32','win-amd64'):
       building_for_windows = True
-      #bits = '64' if self.plat_name == 'win-amd64' else '32'
-      module.define_macros.append(('_CRT_SECURE_NO_WARNINGS','1'))
-      #module.include_dirs.append('yara/windows/include')
-      module.libraries.append('advapi32')
-      module.libraries.append('user32')
     else:
       building_for_windows = False
 
@@ -177,18 +180,13 @@ class BuildExtCommand(build_ext):
     if self.dynamic_linking:
       module.libraries.append('yara')
     else:
-      #if building_for_windows:
-      #  module.library_dirs.append('yara/windows/lib')
-
-      if building_for_windows:
-        module.define_macros.append(('HASH_MODULE', '1'))
-        #module.libraries.append('libeay32')
-      elif (has_function('MD5_Init', libraries=['crypto']) and
-          has_function('SHA256_Init', libraries=['crypto'])):
-        module.define_macros.append(('HASH_MODULE', '1'))
-        module.libraries.append('crypto')
-      else:
-        exclusions.append('yara/libyara/modules/hash.c')
+      if not ('HASH_MODULE', '1') in self.define:
+        if (has_function('MD5_Init', libraries=['crypto']) and
+            has_function('SHA256_Init', libraries=['crypto'])):
+          module.define_macros.append(('HASH_MODULE', '1'))
+          module.libraries.append('crypto')
+        else:
+          exclusions.append('yara/libyara/modules/hash.c')
 
       if self.enable_magic:
         module.define_macros.append(('MAGIC_MODULE', '1'))
@@ -200,6 +198,11 @@ class BuildExtCommand(build_ext):
         module.libraries.append('jansson')
       else:
         exclusions.append('yara/libyara/modules/cuckoo.c')
+
+      if self.enable_dotnet:
+        module.define_macros.append(('DOTNET_MODULE', '1'))
+      else:
+        exclusions.append('yara/libyara/modules/dotnet.c')
 
       exclusions = [os.path.normpath(x) for x in exclusions]
 
