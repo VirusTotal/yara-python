@@ -178,6 +178,7 @@ class BuildExtCommand(build_ext):
       module.libraries.append('ws2_32')
 
     if building_for_osx:
+      module.include_dirs.append('/usr/local/opt/openssl/include')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
