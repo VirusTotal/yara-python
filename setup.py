@@ -201,6 +201,7 @@ class BuildExtCommand(build_ext):
         if (has_function('MD5_Init', libraries=['crypto']) and
             has_function('SHA256_Init', libraries=['crypto'])):
           module.define_macros.append(('HASH_MODULE', '1'))
+          module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
           module.libraries.append('crypto')
         else:
           exclusions.append('yara/libyara/modules/hash.c')
