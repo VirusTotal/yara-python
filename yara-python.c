@@ -424,7 +424,7 @@ PyObject* convert_object_to_python(
     case OBJECT_TYPE_STRING:
       if (object->value.ss != NULL)
         result = PyBytes_FromStringAndSize(
-            object->value.ss->c_string, 
+            object->value.ss->c_string,
             object->value.ss->length);
       break;
 
@@ -903,8 +903,8 @@ PyObject* handle_error(
   {
     case ERROR_COULD_NOT_ATTACH_TO_PROCESS:
       return PyErr_Format(
-        YaraError,
-        "access denied");
+          YaraError,
+          "access denied");
     case ERROR_INSUFFICIENT_MEMORY:
       return PyErr_NoMemory();
     case ERROR_COULD_NOT_OPEN_FILE:
@@ -935,6 +935,11 @@ PyObject* handle_error(
       return PyErr_Format(
           YaraError,
           "external variable \"%s\" was already defined with a different type",
+          extra);
+    case ERROR_UNSUPPORTED_FILE_VERSION:
+      return PyErr_Format(
+          YaraError,
+          "rules file \"%s\" is incompatible with this version of YARA",
           extra);
     default:
       return PyErr_Format(
