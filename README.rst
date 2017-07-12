@@ -64,4 +64,4 @@ Documentation
 -------------
 
 Find more information about how to use yara-python at
-http://yara.readthedocs.org/en/latest/yarapython.html.
+https://yara.readthedocs.org/en/latest/yarapython.html.
