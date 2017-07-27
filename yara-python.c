@@ -551,6 +551,23 @@ PyObject* convert_dictionary_to_python(
 }
 
 
+static YR_RULE *string_to_rule(YR_RULES* rules, YR_STRING* string)
+{
+  YR_RULE* rule; YR_STRING* rule_string;
+
+  if (rules == NULL)
+    return NULL;
+
+  yr_rules_foreach(rules, rule) {
+    yr_rule_strings_foreach(rule, rule_string) {
+      if (rule_string == string)
+        return rule;
+    }
+  }
+  return NULL;
+}
+
+
 int yara_callback(
     int message,
     void* message_data,
@@ -561,6 +578,7 @@ int yara_callback(
   YR_META* meta;
   YR_RULE* rule;
   YR_MODULE_IMPORT* module_import;
+  YR_SCAN_CONTEXT *context;
 
   const char* tag;
 
@@ -674,6 +692,30 @@ int yara_callback(
     PyGILState_Release(gil_state);
 
     return result;
+  }
+
+  if (message == CALLBACK_MSG_SCAN_ERROR) {
+    context = (YR_SCAN_CONTEXT *) message_data;
+    if (context->status == ERROR_TOO_MANY_MATCHES) {
+      string = context->failing_string;
+      rule = string_to_rule(context->rules, string);
+
+      gil_state = PyGILState_Ensure();
+
+      PyErr_Format(
+        YaraError,
+        "rule '%s' has a string with identifier '%s' that causes "
+        "too many matches: %d!",
+        rule != NULL ? rule->identifier : "<unknown rule>",
+        string != NULL ? string->identifier : "<unknown identifier>",
+        MAX_STRING_MATCHES
+      );
+
+      PyGILState_Release(gil_state);
+
+      return ERROR_CALLBACK_ERROR;
+    }
+    return ERROR_CALLBACK_ERROR;
   }
 
   rule = (YR_RULE*) message_data;
@@ -1496,7 +1538,7 @@ static PyObject* Rules_match(
     {
       Py_DECREF(callback_data.matches);
 
-      if (error != ERROR_CALLBACK_ERROR)
+      if (error != ERROR_CALLBACK_ERROR && error != ERROR_TOO_MANY_MATCHES)
       {
         handle_error(error, filepath);
 
