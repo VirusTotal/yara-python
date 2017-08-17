@@ -666,7 +666,7 @@ int yara_callback(
     }
     else
     {
-      result = CALLBACK_ERROR;
+      result = ERROR_CALLBACK_ERROR;
     }
 
     Py_DECREF(module_info_dict);
