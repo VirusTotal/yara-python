@@ -1699,6 +1699,75 @@ void raise_exception_on_error_or_warning(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char* yara_include_callback(
+  const char* include_name,
+  const char* calling_rule_filename,
+  const char* calling_rule_namespace,
+  void* user_data)
+{
+  printf("here0\n");
+  PyObject* callback = (PyObject*) user_data;
+  PyObject* py_incl_name = NULL;
+  PyObject* py_calling_fn = NULL;
+  PyObject* py_calling_ns = NULL;
+  printf("here1\n");
+
+  if (include_name != NULL)
+  {
+    py_incl_name = PY_STRING(include_name);
+  }
+  else //safeguard: should never happen for 'include_name'
+  {
+    py_incl_name = Py_None;
+  }
+  if (calling_rule_filename != NULL)
+  {
+    py_calling_fn = PY_STRING(calling_rule_filename);
+  }
+  else
+  {
+    py_calling_fn = Py_None;
+  }
+  if (calling_rule_namespace != NULL)
+  {
+    py_calling_ns = PY_STRING(calling_rule_namespace);
+  }
+  else
+  {
+    py_calling_ns = Py_None;
+  }
+  printf("here2\n");
+
+  PyObject* result =  PyObject_CallFunctionObjArgs(callback,
+                                                   py_incl_name,
+                                                   py_calling_fn,
+                                                   py_calling_ns,
+                                                   NULL);
+  printf("here3\n");
+  const char* cstring_result = NULL;
+  #if PY_MAJOR_VERSION >= 3
+  if (result != NULL && PyBytes_Check(result))
+  #else
+  if (result != NULL && PyString_Check(result))
+  #endif
+  {
+    cstring_result = PY_STRING_TO_C(result);
+  }
+  else if(PyUnicode_Check(result))
+  {
+    cstring_result = PY_STRING_TO_C(PyUnicode_AsUTF8String(result));
+  }
+  else
+  {
+    PyErr_Format( PyExc_TypeError, "Include callback must return a yara rule formated as ascii or utf-8 string" );
+  }
+
+  printf("Yara-Python callback ret: %s\n", cstring_result);
+  return cstring_result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 static PyObject* yara_compile(
     PyObject* self,
     PyObject* args,
@@ -1706,7 +1775,7 @@ static PyObject* yara_compile(
 {
   static char *kwlist[] = {
     "filepath", "source", "file", "filepaths", "sources",
-    "includes", "externals", "error_on_warning", NULL};
+    "includes", "externals", "error_on_warning", "include_callback", NULL};
 
   YR_COMPILER* compiler;
   YR_RULES* yara_rules;
@@ -1723,6 +1792,7 @@ static PyObject* yara_compile(
   PyObject* includes = NULL;
   PyObject* externals = NULL;
   PyObject* error_on_warning = NULL;
+  PyObject* include_callback = NULL;
 
   Py_ssize_t pos = 0;
 
@@ -1736,7 +1806,7 @@ static PyObject* yara_compile(
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|ssOOOOOO",
+        "|ssOOOOOOO",
         kwlist,
         &filepath,
         &source,
@@ -1745,7 +1815,8 @@ static PyObject* yara_compile(
         &sources_dict,
         &includes,
         &externals,
-        &error_on_warning))
+        &error_on_warning,
+        &include_callback))
   {
     error = yr_compiler_create(&compiler);
 
@@ -1789,6 +1860,17 @@ static PyObject* yara_compile(
             PyExc_TypeError,
             "'includes' param must be of boolean type");
       }
+    }
+
+    if (include_callback != NULL)
+    {
+      if (!PyCallable_Check(include_callback))
+      {
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'include_callback' must be callable");
+      }
+      yr_compiler_set_include_callback(compiler, yara_include_callback, include_callback);
     }
 
     if (externals != NULL && externals != Py_None)
