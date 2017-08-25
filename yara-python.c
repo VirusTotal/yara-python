@@ -1741,24 +1741,14 @@ const char* yara_include_callback(
                                                    py_calling_ns,
                                                    NULL);
   const char* cstring_result = NULL;
-  #if PY_MAJOR_VERSION >= 3
-  if (result != NULL && result != Py_None && PyUnicode_Check(result))
+  
+  if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
   {
     cstring_result = PY_STRING_TO_C(result);
   }
-  #else
-  if (result != NULL && result != Py_None && PyString_Check(result))
-  {
-    cstring_result = PY_STRING_TO_C(result);
-  }
-  else if (result != NULL && result != Py_None && PyUnicode_Check(result))
-  {
-    cstring_result = PY_STRING_TO_C(PyUnicode_AsUTF8String(result));
-  }
-  #endif
   else
   {
-    PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or utf-8 string");
+    PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or unicode string");
   }
 
   return cstring_result;
