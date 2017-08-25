@@ -1705,12 +1705,10 @@ const char* yara_include_callback(
   const char* calling_rule_namespace,
   void* user_data)
 {
-  printf("here0\n");
   PyObject* callback = (PyObject*) user_data;
   PyObject* py_incl_name = NULL;
   PyObject* py_calling_fn = NULL;
   PyObject* py_calling_ns = NULL;
-  printf("here1\n");
 
   if (include_name != NULL)
   {
@@ -1736,33 +1734,33 @@ const char* yara_include_callback(
   {
     py_calling_ns = Py_None;
   }
-  printf("here2\n");
 
   PyObject* result =  PyObject_CallFunctionObjArgs(callback,
                                                    py_incl_name,
                                                    py_calling_fn,
                                                    py_calling_ns,
                                                    NULL);
-  printf("here3\n");
   const char* cstring_result = NULL;
   #if PY_MAJOR_VERSION >= 3
-  if (result != NULL && PyBytes_Check(result))
-  #else
-  if (result != NULL && PyString_Check(result))
-  #endif
+  if (result != NULL && result != Py_None && PyUnicode_Check(result))
   {
     cstring_result = PY_STRING_TO_C(result);
   }
-  else if(PyUnicode_Check(result))
+  #else
+  if (result != NULL && result != Py_None && PyString_Check(result))
+  {
+    cstring_result = PY_STRING_TO_C(result);
+  }
+  else if (result != NULL && result != Py_None && PyUnicode_Check(result))
   {
     cstring_result = PY_STRING_TO_C(PyUnicode_AsUTF8String(result));
   }
+  #endif
   else
   {
-    PyErr_Format( PyExc_TypeError, "Include callback must return a yara rule formated as ascii or utf-8 string" );
+    PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or utf-8 string");
   }
 
-  printf("Yara-Python callback ret: %s\n", cstring_result);
   return cstring_result;
 }
 
