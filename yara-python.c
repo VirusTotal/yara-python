@@ -1741,14 +1741,22 @@ const char* yara_include_callback(
                                                    py_calling_ns,
                                                    NULL);
   const char* cstring_result = NULL;
-  
+
   if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
   {
     cstring_result = PY_STRING_TO_C(result);
   }
   else
   {
-    PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or unicode string");
+    PyObject* exception = PyErr_Occurred();
+    if (exception != NULL){
+      PyErr_Print();
+    }
+    else
+    {
+      PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or unicode string");
+    }
+    cstring_result = NULL;
   }
 
   return cstring_result;
