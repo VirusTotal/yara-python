@@ -1,3 +1,4 @@
 [submodule "yara"]
 	path = yara
-url=https://edhoedt@github.com/edhoedt/yara
+	url=https://edhoedt@github.com/edhoedt/yara
+	branch = callback_on_include
