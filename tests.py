@@ -939,6 +939,25 @@ class TestYara(unittest.TestCase):
         self.assertTrue(data['constants']['one'] == 1)
         self.assertTrue(data['constants']['two'] == 2)
 
+    def testRulesIterator(self):
+
+        rules = yara.compile(
+            source='''
+            rule test1 { condition: false }
+            rule test2 { condition: false }
+            rule test3 { condition: false }
+            ''')
+
+        for i, r in enumerate(rules, start=1):
+           self.assertTrue(r.identifier == 'test%d' % i)
+
+        it = rules.__iter__()
+        r = it.next()
+        self.assertTrue(r.identifier == 'test1')
+        r = it.next()
+        self.assertTrue(r.identifier == 'test2')
+        r = it.next()
+        self.assertTrue(r.identifier == 'test3')
 
 
 if __name__ == "__main__":
