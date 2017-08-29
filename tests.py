@@ -951,12 +951,12 @@ class TestYara(unittest.TestCase):
         for i, r in enumerate(rules, start=1):
            self.assertTrue(r.identifier == 'test%d' % i)
 
-        it = rules.__iter__()
-        r = it.next()
+        it = iter(rules)
+        r = next(it)
         self.assertTrue(r.identifier == 'test1')
-        r = it.next()
+        r = next(it)
         self.assertTrue(r.identifier == 'test2')
-        r = it.next()
+        r = next(it)
         self.assertTrue(r.identifier == 'test3')
 
 
