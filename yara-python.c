@@ -68,6 +68,10 @@ This module allows you to apply YARA rules to files or strings.\n\
 For complete documentation please visit:\n\
 https://plusvic.github.io/yara\n"
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+#include <string.h>
+#define strdup _strdup
+#endif
 
 // Match object
 
@@ -1710,6 +1714,8 @@ const char* yara_include_callback(
   PyObject* py_calling_fn = NULL;
   PyObject* py_calling_ns = NULL;
 
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
   if (include_name != NULL)
   {
     py_incl_name = PY_STRING(include_name);
@@ -1735,16 +1741,22 @@ const char* yara_include_callback(
     py_calling_ns = Py_None;
   }
 
+  Py_INCREF(callback);
   PyObject* result =  PyObject_CallFunctionObjArgs(callback,
                                                    py_incl_name,
                                                    py_calling_fn,
                                                    py_calling_ns,
                                                    NULL);
-  const char* cstring_result = NULL;
+  Py_DECREF(callback);
+  Py_DECREF(py_incl_name);
+  Py_XDECREF(py_calling_fn);
+  Py_XDECREF(py_calling_ns);
 
+  const char* cstring_result = NULL;
   if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
   {
-    cstring_result = PY_STRING_TO_C(result);
+    //transferring string ownership to C code
+    cstring_result = strdup(PY_STRING_TO_C(result));
   }
   else
   {
@@ -1758,8 +1770,20 @@ const char* yara_include_callback(
     }
     cstring_result = NULL;
   }
+  Py_XDECREF(result);
+  PyGILState_Release(gil_state);
 
   return cstring_result;
+}
+
+void yara_include_free(
+  const char* result_ptr,
+  void* user_data)
+{
+  if(result_ptr != NULL)
+  {
+    free((void*)result_ptr);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1814,6 +1838,7 @@ static PyObject* yara_compile(
         &error_on_warning,
         &include_callback))
   {
+
     error = yr_compiler_create(&compiler);
 
     if (error != ERROR_SUCCESS)
@@ -1866,7 +1891,11 @@ static PyObject* yara_compile(
             PyExc_TypeError,
             "'include_callback' must be callable");
       }
-      yr_compiler_set_include_callback(compiler, yara_include_callback, include_callback);
+      Py_INCREF(include_callback);
+      yr_compiler_set_include_callback(compiler,
+                                       yara_include_callback,
+                                       yara_include_free,
+                                       include_callback);
     }
 
     if (externals != NULL && externals != Py_None)
@@ -2038,7 +2067,7 @@ static PyObject* yara_compile(
 
     yr_compiler_destroy(compiler);
   }
-
+  Py_XDECREF(include_callback);
   return result;
 }
 
