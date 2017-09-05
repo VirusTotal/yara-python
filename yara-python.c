@@ -1282,6 +1282,7 @@ static PyObject* Rules_next(
 
   if (RULE_IS_NULL(rules->iter_current_rule))
   {
+    rules->iter_current_rule = rules->rules->rules_list_head;
     PyErr_SetNone(PyExc_StopIteration);
     return NULL;
   }
