@@ -1743,11 +1743,15 @@ const char* yara_include_callback(
   }
 
   Py_INCREF(callback);
+  PyObject *type=NULL, *value=NULL, *traceback=NULL;
+  PyErr_Fetch(&type, &value, &traceback);
   PyObject* result =  PyObject_CallFunctionObjArgs(callback,
                                                    py_incl_name,
                                                    py_calling_fn,
                                                    py_calling_ns,
                                                    NULL);
+  PyErr_Restore(type, value, traceback);
+
   Py_DECREF(callback);
   Py_DECREF(py_incl_name);
   Py_XDECREF(py_calling_fn);
