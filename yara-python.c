@@ -1765,11 +1765,7 @@ const char* yara_include_callback(
   }
   else
   {
-    PyObject* exception = PyErr_Occurred();
-    if (exception != NULL){
-      PyErr_Print();
-    }
-    else
+    if(PyErr_Occurred() == NULL)
     {
       PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or unicode string");
     }
