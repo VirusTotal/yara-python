@@ -1337,7 +1337,7 @@ static PyObject* Rules_match(
   char* filepath = NULL;
   char* data = NULL;
 
-  int pid = 0;
+  unsigned int pid = UINT_MAX;
   int timeout = 0;
   int length;
   int error = ERROR_SUCCESS;
@@ -1358,7 +1358,7 @@ static PyObject* Rules_match(
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis#OOOiOO",
+        "|sIs#OOOiOO",
         kwlist,
         &filepath,
         &pid,
@@ -1371,7 +1371,7 @@ static PyObject* Rules_match(
         &callback_data.modules_data,
         &callback_data.modules_callback))
   {
-    if (filepath == NULL && data == NULL && pid == 0)
+    if (filepath == NULL && data == NULL && pid == UINT_MAX)
     {
       return PyErr_Format(
           PyExc_TypeError,
@@ -1465,7 +1465,7 @@ static PyObject* Rules_match(
 
       Py_END_ALLOW_THREADS
     }
-    else if (pid != 0)
+    else if (pid != UINT_MAX)
     {
       callback_data.matches = PyList_New(0);
 
