@@ -2175,7 +2175,7 @@ static PyObject* ProcessMemoryIterator_next(
   ProcessMemoryIterator* it = (ProcessMemoryIterator*) self;
   int err;
 
-  // This indicates that the iterator has been used.
+  // This indicates that the iterator has been used up.
   if (it->block_iterator == NULL)
   {
     PyErr_SetNone(PyExc_StopIteration);
