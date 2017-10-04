@@ -2086,7 +2086,6 @@ static PyObject* yara_load(
 typedef struct
 {
   PyObject_HEAD
-  PyObject* externals;
   YR_MEMORY_BLOCK_ITERATOR* block_iterator;
   YR_MEMORY_BLOCK* block;
 } ProcessMemoryIterator;
@@ -2169,6 +2168,107 @@ static void ProcessMemoryIterator_dealloc(
   PyObject_Del(self);
 }
 
+typedef struct
+{
+  PyObject_HEAD
+  PyObject* data;
+  size_t size;
+  size_t base;
+} MemoryBlock;
+
+static void MemoryBlock_dealloc(PyObject* self);
+
+static PyMethodDef MemoryBlock_methods[] =
+{
+  {
+    NULL,
+    NULL
+  }
+};
+
+static PyMemberDef MemoryBlock_members[] = {
+    {"data", T_OBJECT_EX, offsetof(MemoryBlock, data), 0,
+     "data"},
+    {"size", T_ULONG, offsetof(MemoryBlock, size), 0,
+     "size"},
+    {"base", T_ULONG, offsetof(MemoryBlock, base), 0,
+     "base"},
+    {NULL}
+};
+
+static PyObject* MemoryBlock_getattro(
+    PyObject* self,
+    PyObject* name)
+{
+  return PyObject_GenericGetAttr(self, name);
+}
+
+static PyTypeObject MemoryBlock_Type = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+  "yara.MemoryBlock",         /*tp_name*/
+  sizeof(MemoryBlock),        /*tp_basicsize*/
+  0,                          /*tp_itemsize*/
+  (destructor) MemoryBlock_dealloc, /*tp_dealloc*/
+  0,                          /*tp_print*/
+  0,                          /*tp_getattr*/
+  0,                          /*tp_setattr*/
+  0,                          /*tp_compare*/
+  0,                          /*tp_repr*/
+  0,                          /*tp_as_number*/
+  0,                          /*tp_as_sequence*/
+  0,                          /*tp_as_mapping*/
+  0,                          /*tp_hash */
+  0,                          /*tp_call*/
+  0,                          /*tp_str*/
+  MemoryBlock_getattro,       /*tp_getattro*/
+  0,                          /*tp_setattro*/
+  0,                          /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  "MemoryBlock",              /* tp_doc */
+  0,                          /* tp_traverse */
+  0,                          /* tp_clear */
+  0,                          /* tp_richcompare */
+  0,                          /* tp_weaklistoffset */
+  0,                          /* tp_iter */
+  0,                          /* tp_iternext */
+  MemoryBlock_methods,        /* tp_methods */
+  MemoryBlock_members,        /* tp_members */
+  0,                          /* tp_getset */
+  0,                          /* tp_base */
+  0,                          /* tp_dict */
+  0,                          /* tp_descr_get */
+  0,                          /* tp_descr_set */
+  0,                          /* tp_dictoffset */
+  0,                          /* tp_init */
+  0,                          /* tp_alloc */
+  0,                          /* tp_new */
+};
+
+static PyObject* MemoryBlock_NEW(void)
+{
+  MemoryBlock* block = PyObject_NEW(MemoryBlock, &MemoryBlock_Type);
+  if (block == NULL)
+    return NULL;
+
+  block->data = NULL;
+  block->size = 0;
+  block->base = 0;
+
+  return (PyObject*) block;
+}
+
+static void MemoryBlock_dealloc(PyObject* self)
+{
+  MemoryBlock* block = (MemoryBlock*) self;
+
+  Py_XDECREF(block->data);
+  block->data = NULL;
+
+  PyObject_Del(self);
+}
+
+
+
 static PyObject* ProcessMemoryIterator_next(
     PyObject* self)
 {
@@ -2211,9 +2311,13 @@ static PyObject* ProcessMemoryIterator_next(
     return NULL;
   }
 
-  return PyBytes_FromStringAndSize(
+  MemoryBlock *memory_block = (MemoryBlock *) MemoryBlock_NEW();
+  memory_block->size = it->block->size;
+  memory_block->base = it->block->base;
+  memory_block->data = PyBytes_FromStringAndSize(
       (const char*) data_ptr,
       it->block->size);
+  return (PyObject *) memory_block;
 }
 
 static PyObject* yara_process_memory_iterator(
