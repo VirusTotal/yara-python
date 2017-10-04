@@ -2171,15 +2171,30 @@ static void ProcessMemoryIterator_dealloc(
 typedef struct
 {
   PyObject_HEAD
-  PyObject* data;
+  uint8_t* raw_data;
   size_t size;
   size_t base;
 } MemoryBlock;
 
 static void MemoryBlock_dealloc(PyObject* self);
 
+static PyObject * MemoryBlock_data(
+    PyObject* self,
+    PyObject* args)
+{
+  MemoryBlock* block = (MemoryBlock*) self;
+  return PyBytes_FromStringAndSize(
+      (const char *) block->raw_data,
+      block->size);
+}
+
 static PyMethodDef MemoryBlock_methods[] =
 {
+  {
+    "data",
+    (PyCFunction) MemoryBlock_data,
+    METH_NOARGS
+  },
   {
     NULL,
     NULL
@@ -2187,8 +2202,6 @@ static PyMethodDef MemoryBlock_methods[] =
 };
 
 static PyMemberDef MemoryBlock_members[] = {
-    {"data", T_OBJECT_EX, offsetof(MemoryBlock, data), 0,
-     "data"},
     {"size", T_ULONG, offsetof(MemoryBlock, size), 0,
      "size"},
     {"base", T_ULONG, offsetof(MemoryBlock, base), 0,
@@ -2202,6 +2215,26 @@ static PyObject* MemoryBlock_getattro(
 {
   return PyObject_GenericGetAttr(self, name);
 }
+
+static int MemoryBlock_getbuffer(
+    PyObject *obj,
+    Py_buffer *view,
+    int flags)
+{
+  MemoryBlock* self = (MemoryBlock*) obj;
+  return PyBuffer_FillInfo(view, (PyObject*)obj, self->raw_data, self->size, 1, flags);
+}
+
+static PyBufferProcs MemoryBlock_as_buffer = {
+#if PY_MAJOR_VERSION < 3
+  (readbufferproc) 0,
+  (writebufferproc) 0,
+  (segcountproc) 0,
+  (charbufferproc) 0,
+#endif
+  (getbufferproc) MemoryBlock_getbuffer,
+  (releasebufferproc) 0,
+};
 
 static PyTypeObject MemoryBlock_Type = {
   PyVarObject_HEAD_INIT(NULL, 0)
@@ -2222,8 +2255,12 @@ static PyTypeObject MemoryBlock_Type = {
   0,                          /*tp_str*/
   MemoryBlock_getattro,       /*tp_getattro*/
   0,                          /*tp_setattro*/
-  0,                          /*tp_as_buffer*/
+  & MemoryBlock_as_buffer,    /*tp_as_buffer*/
+#if PY_MAJOR_VERSION < 3
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_NEWBUFFER, /*tp_flags*/
+#else
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+#endif
   "MemoryBlock",              /* tp_doc */
   0,                          /* tp_traverse */
   0,                          /* tp_clear */
@@ -2250,7 +2287,7 @@ static PyObject* MemoryBlock_NEW(void)
   if (block == NULL)
     return NULL;
 
-  block->data = NULL;
+  block->raw_data = NULL;
   block->size = 0;
   block->base = 0;
 
@@ -2261,8 +2298,7 @@ static void MemoryBlock_dealloc(PyObject* self)
 {
   MemoryBlock* block = (MemoryBlock*) self;
 
-  Py_XDECREF(block->data);
-  block->data = NULL;
+  block->raw_data = NULL;
 
   PyObject_Del(self);
 }
@@ -2314,9 +2350,7 @@ static PyObject* ProcessMemoryIterator_next(
   MemoryBlock *memory_block = (MemoryBlock *) MemoryBlock_NEW();
   memory_block->size = it->block->size;
   memory_block->base = it->block->base;
-  memory_block->data = PyBytes_FromStringAndSize(
-      (const char*) data_ptr,
-      it->block->size);
+  memory_block->raw_data = data_ptr;
   return (PyObject *) memory_block;
 }
 
