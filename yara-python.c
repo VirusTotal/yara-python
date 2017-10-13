@@ -552,9 +552,9 @@ PyObject* convert_dictionary_to_python(
 }
 
 
-#define CALLBACK_ALL 1
-#define CALLBACK_MATCHES 2
-#define CALLBACK_NON_MATCHES 3
+#define CALLBACK_ALL 0x01
+#define CALLBACK_MATCHES 0x02
+#define CALLBACK_NON_MATCHES 0x04
 
 int yara_callback(
     int message,
@@ -594,11 +594,11 @@ int yara_callback(
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_RULE_NOT_MATCHING &&
-      (callback == NULL || which == CALLBACK_MATCHES))
+      (callback == NULL || which & CALLBACK_MATCHES))
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_RULE_MATCHING &&
-      (callback == NULL || which == CALLBACK_NON_MATCHES))
+      (callback == NULL || which & CALLBACK_NON_MATCHES))
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
@@ -1342,7 +1342,7 @@ static PyObject* Rules_match(
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
-      "modules_callback", "which", NULL
+      "modules_callback", "which_callbacks", NULL
       };
 
   char* filepath = NULL;
