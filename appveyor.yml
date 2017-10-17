@@ -115,8 +115,6 @@ install:
   # target Python version and architecture
   - "%CMD_IN_ENV% pip install wheel"
 
-  - "%CMD_IN_ENV% pip install setuptools"
-
   - cd ..
   - ps: Invoke-WebRequest "https://www.npcglib.org/~stathis/downloads/$env:OPENSSL_LIB.7z" -OutFile "openssl.7z"
   - 7z x openssl.7z
