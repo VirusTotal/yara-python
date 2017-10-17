@@ -112,8 +112,12 @@ install:
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
   # pip will build them from source using the MSVC compiler matching the
-  # target Python version and architecture
-  - "%CMD_IN_ENV% pip install wheel"
+  # target Python version and architecture.
+
+  # wheel version 0.29.0 is enforced because version 0.30.0 doesn't support
+  # Python 2.6 anymore. Once we drop support for Python 2.6 we can use the
+  # latest version of wheel.
+  - "%CMD_IN_ENV% pip install wheel==0.29.0"
 
   - cd ..
   - ps: Invoke-WebRequest "https://www.npcglib.org/~stathis/downloads/$env:OPENSSL_LIB.7z" -OutFile "openssl.7z"
