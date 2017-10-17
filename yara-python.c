@@ -389,7 +389,6 @@ typedef struct _CALLBACK_DATA
   PyObject* callback;
   PyObject* modules_data;
   PyObject* modules_callback;
-  int which;
 
 } CALLBACK_DATA;
 
@@ -552,10 +551,6 @@ PyObject* convert_dictionary_to_python(
 }
 
 
-#define CALLBACK_ALL 0x01
-#define CALLBACK_MATCHES 0x02
-#define CALLBACK_NON_MATCHES 0x04
-
 int yara_callback(
     int message,
     void* message_data,
@@ -583,7 +578,6 @@ int yara_callback(
   PyObject* module_data;
   PyObject* callback_result;
   PyObject* module_info_dict;
-  int which = ((CALLBACK_DATA*) user_data)->which;
 
   Py_ssize_t data_size;
   PyGILState_STATE gil_state;
@@ -593,12 +587,7 @@ int yara_callback(
   if (message == CALLBACK_MSG_SCAN_FINISHED)
     return CALLBACK_CONTINUE;
 
-  if (message == CALLBACK_MSG_RULE_NOT_MATCHING &&
-      (callback == NULL || which & CALLBACK_MATCHES))
-    return CALLBACK_CONTINUE;
-
-  if (message == CALLBACK_MSG_RULE_MATCHING &&
-      (callback == NULL || which & CALLBACK_NON_MATCHES))
+  if (message == CALLBACK_MSG_RULE_NOT_MATCHING && callback == NULL)
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
@@ -1342,7 +1331,7 @@ static PyObject* Rules_match(
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
-      "modules_callback", "which_callbacks", NULL
+      "modules_callback", NULL
       };
 
   char* filepath = NULL;
@@ -1365,12 +1354,11 @@ static PyObject* Rules_match(
   callback_data.callback = NULL;
   callback_data.modules_data = NULL;
   callback_data.modules_callback = NULL;
-  callback_data.which = CALLBACK_ALL;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis#OOOiOOi",
+        "|sis#OOOiOO",
         kwlist,
         &filepath,
         &pid,
@@ -1381,8 +1369,7 @@ static PyObject* Rules_match(
         &fast,
         &timeout,
         &callback_data.modules_data,
-        &callback_data.modules_callback,
-        &callback_data.which))
+        &callback_data.modules_callback))
   {
     if (filepath == NULL && data == NULL && pid == 0)
     {
@@ -2149,9 +2136,6 @@ MOD_INIT(yara)
 
   PyModule_AddIntConstant(m, "CALLBACK_CONTINUE", 0);
   PyModule_AddIntConstant(m, "CALLBACK_ABORT", 1);
-  PyModule_AddIntConstant(m, "CALLBACK_ALL", CALLBACK_ALL);
-  PyModule_AddIntConstant(m, "CALLBACK_MATCHES", CALLBACK_MATCHES);
-  PyModule_AddIntConstant(m, "CALLBACK_NON_MATCHES", CALLBACK_NON_MATCHES);
   PyModule_AddStringConstant(m, "__version__", YR_VERSION);
   PyModule_AddStringConstant(m, "YARA_VERSION", YR_VERSION);
   PyModule_AddIntConstant(m, "YARA_VERSION_HEX", YR_VERSION_HEX);
