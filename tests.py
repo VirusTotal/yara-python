@@ -829,6 +829,13 @@ class TestYara(unittest.TestCase):
         self.assertTrue(rule_data['matches'])
         self.assertTrue(rule_data['rule'] == 'test')
 
+        rule_data = None
+
+        r = yara.compile(source='rule test { condition: false }')
+        r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_NON_MATCHES)
+
+        self.assertTrue(rule_data['rule'] == 'test')
+
     def testCompare(self):
 
         r = yara.compile(sources={
