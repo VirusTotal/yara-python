@@ -1721,12 +1721,16 @@ const char* yara_include_callback(
     const char* calling_rule_namespace,
     void* user_data)
 {
-  const char* cstring_result = NULL;
-
+  PyObject* result;
   PyObject* callback = (PyObject*) user_data;
   PyObject* py_incl_name = NULL;
   PyObject* py_calling_fn = NULL;
   PyObject* py_calling_ns = NULL;
+  PyObject* type = NULL;
+  PyObject* value = NULL;
+  PyObject* traceback = NULL;
+
+  const char* cstring_result = NULL;
 
   PyGILState_STATE gil_state = PyGILState_Ensure();
 
@@ -1760,10 +1764,9 @@ const char* yara_include_callback(
     Py_INCREF(py_calling_ns);
   }
 
-  PyObject *type=NULL, *value=NULL, *traceback=NULL;
   PyErr_Fetch(&type, &value, &traceback);
 
-  PyObject* result = PyObject_CallFunctionObjArgs(
+  result = PyObject_CallFunctionObjArgs(
       callback,
       py_incl_name,
       py_calling_fn,
