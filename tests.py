@@ -836,6 +836,16 @@ class TestYara(unittest.TestCase):
 
         self.assertTrue(rule_data['rule'] == 'test')
 
+    def testIncludeCallback(self):
+
+        def callback(requested_filename, filename, namespace):
+            if requested_filename == 'foo':
+                return 'rule included {condition: true }'
+            return None
+
+        r = yara.compile(source='include "foo" rule r { condition: included }', include_callback=callback)
+        self.assertTrue(r.match(data='dummy'))
+
     def testCompare(self):
 
         r = yara.compile(sources={

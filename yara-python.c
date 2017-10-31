@@ -68,6 +68,10 @@ This module allows you to apply YARA rules to files or strings.\n\
 For complete documentation please visit:\n\
 https://plusvic.github.io/yara\n"
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+#include <string.h>
+#define strdup _strdup
+#endif
 
 // Match object
 
@@ -1711,6 +1715,100 @@ void raise_exception_on_error_or_warning(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+const char* yara_include_callback(
+    const char* include_name,
+    const char* calling_rule_filename,
+    const char* calling_rule_namespace,
+    void* user_data)
+{
+  const char* cstring_result = NULL;
+
+  PyObject* callback = (PyObject*) user_data;
+  PyObject* py_incl_name = NULL;
+  PyObject* py_calling_fn = NULL;
+  PyObject* py_calling_ns = NULL;
+
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
+  if (include_name != NULL)
+  {
+    py_incl_name = PY_STRING(include_name);
+  }
+  else //safeguard: should never happen for 'include_name'
+  {
+    py_incl_name = Py_None;
+    Py_INCREF(py_incl_name);
+  }
+
+  if (calling_rule_filename != NULL)
+  {
+    py_calling_fn = PY_STRING(calling_rule_filename);
+  }
+  else
+  {
+    py_calling_fn = Py_None;
+    Py_INCREF(py_calling_fn);
+  }
+
+  if (calling_rule_namespace != NULL)
+  {
+    py_calling_ns = PY_STRING(calling_rule_namespace);
+  }
+  else
+  {
+    py_calling_ns = Py_None;
+    Py_INCREF(py_calling_ns);
+  }
+
+  PyObject *type=NULL, *value=NULL, *traceback=NULL;
+  PyErr_Fetch(&type, &value, &traceback);
+
+  PyObject* result = PyObject_CallFunctionObjArgs(
+      callback,
+      py_incl_name,
+      py_calling_fn,
+      py_calling_ns,
+      NULL);
+
+  PyErr_Restore(type, value, traceback);
+
+  Py_DECREF(py_incl_name);
+  Py_DECREF(py_calling_fn);
+  Py_DECREF(py_calling_ns);
+
+  if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
+  {
+    //transferring string ownership to C code
+    cstring_result = strdup(PY_STRING_TO_C(result));
+  }
+  else
+  {
+    if (PyErr_Occurred() == NULL)
+    {
+      PyErr_Format(PyExc_TypeError,
+          "'include_callback' function must return a yara rules as an ascii "
+          "or unicode string");
+    }
+  }
+
+  Py_XDECREF(result);
+  PyGILState_Release(gil_state);
+
+  return cstring_result;
+}
+
+void yara_include_free(
+    const char* result_ptr,
+    void* user_data)
+{
+  if (result_ptr != NULL)
+  {
+    free((void*) result_ptr);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 static PyObject* yara_compile(
     PyObject* self,
     PyObject* args,
@@ -1718,7 +1816,7 @@ static PyObject* yara_compile(
 {
   static char *kwlist[] = {
     "filepath", "source", "file", "filepaths", "sources",
-    "includes", "externals", "error_on_warning", NULL};
+    "includes", "externals", "error_on_warning", "include_callback", NULL};
 
   YR_COMPILER* compiler;
   YR_RULES* yara_rules;
@@ -1735,6 +1833,7 @@ static PyObject* yara_compile(
   PyObject* includes = NULL;
   PyObject* externals = NULL;
   PyObject* error_on_warning = NULL;
+  PyObject* include_callback = NULL;
 
   Py_ssize_t pos = 0;
 
@@ -1748,7 +1847,7 @@ static PyObject* yara_compile(
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|ssOOOOOO",
+        "|ssOOOOOOO",
         kwlist,
         &filepath,
         &source,
@@ -1757,8 +1856,10 @@ static PyObject* yara_compile(
         &sources_dict,
         &includes,
         &externals,
-        &error_on_warning))
+        &error_on_warning,
+        &include_callback))
   {
+
     error = yr_compiler_create(&compiler);
 
     if (error != ERROR_SUCCESS)
@@ -1804,6 +1905,23 @@ static PyObject* yara_compile(
       }
     }
 
+    if (include_callback != NULL)
+    {
+      if (!PyCallable_Check(include_callback))
+      {
+        yr_compiler_destroy(compiler);
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'include_callback' must be callable");
+      }
+
+      yr_compiler_set_include_callback(
+          compiler,
+          yara_include_callback,
+          yara_include_free,
+          include_callback);
+    }
+
     if (externals != NULL && externals != Py_None)
     {
       if (PyDict_Check(externals))
@@ -1822,6 +1940,8 @@ static PyObject* yara_compile(
             "'externals' must be a dictionary");
       }
     }
+
+    Py_XINCREF(include_callback);
 
     if (filepath != NULL)
     {
@@ -1844,12 +1964,15 @@ static PyObject* yara_compile(
     else if (file != NULL)
     {
       fd = dup(PyObject_AsFileDescriptor(file));
-      if (fd != -1) {
+
+      if (fd != -1)
+      {
         fh = fdopen(fd, "r");
         error = yr_compiler_add_file(compiler, fh, NULL, NULL);
         fclose(fh);
       }
-      else {
+      else
+      {
         result = PyErr_Format(
             PyExc_TypeError,
             "'file' is not a file object");
@@ -1972,6 +2095,7 @@ static PyObject* yara_compile(
     }
 
     yr_compiler_destroy(compiler);
+    Py_XDECREF(include_callback);
   }
 
   return result;
