@@ -1760,13 +1760,12 @@ const char* yara_include_callback(
     Py_INCREF(py_calling_ns);
   }
 
-
   PyObject *type=NULL, *value=NULL, *traceback=NULL;
   PyErr_Fetch(&type, &value, &traceback);
 
   Py_INCREF(callback);
 
-  PyObject* result =  PyObject_CallFunctionObjArgs(
+  PyObject* result = PyObject_CallFunctionObjArgs(
       callback,
       py_incl_name,
       py_calling_fn,
@@ -1920,11 +1919,11 @@ static PyObject* yara_compile(
             "'include_callback' must be callable");
       }
 
-      Py_INCREF(include_callback);
-      yr_compiler_set_include_callback(compiler,
-                                       yara_include_callback,
-                                       yara_include_free,
-                                       include_callback);
+      yr_compiler_set_include_callback(
+          compiler,
+          yara_include_callback,
+          yara_include_free,
+          include_callback);
     }
 
     if (externals != NULL && externals != Py_None)
@@ -1945,6 +1944,8 @@ static PyObject* yara_compile(
             "'externals' must be a dictionary");
       }
     }
+
+    Py_XINCREF(include_callback);
 
     if (filepath != NULL)
     {
@@ -2098,8 +2099,9 @@ static PyObject* yara_compile(
     }
 
     yr_compiler_destroy(compiler);
+    Py_XDECREF(include_callback);
   }
-  Py_XDECREF(include_callback);
+
   return result;
 }
 
