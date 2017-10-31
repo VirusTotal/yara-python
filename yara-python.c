@@ -1716,11 +1716,13 @@ void raise_exception_on_error_or_warning(
 ////////////////////////////////////////////////////////////////////////////////
 
 const char* yara_include_callback(
-  const char* include_name,
-  const char* calling_rule_filename,
-  const char* calling_rule_namespace,
-  void* user_data)
+    const char* include_name,
+    const char* calling_rule_filename,
+    const char* calling_rule_namespace,
+    void* user_data)
 {
+  const char* cstring_result = NULL;
+
   PyObject* callback = (PyObject*) user_data;
   PyObject* py_incl_name = NULL;
   PyObject* py_calling_fn = NULL;
@@ -1758,22 +1760,27 @@ const char* yara_include_callback(
     Py_INCREF(py_calling_ns);
   }
 
-  Py_INCREF(callback);
+
   PyObject *type=NULL, *value=NULL, *traceback=NULL;
   PyErr_Fetch(&type, &value, &traceback);
-  PyObject* result =  PyObject_CallFunctionObjArgs(callback,
-                                                   py_incl_name,
-                                                   py_calling_fn,
-                                                   py_calling_ns,
-                                                   NULL);
-  PyErr_Restore(type, value, traceback);
+
+  Py_INCREF(callback);
+
+  PyObject* result =  PyObject_CallFunctionObjArgs(
+      callback,
+      py_incl_name,
+      py_calling_fn,
+      py_calling_ns,
+      NULL);
 
   Py_DECREF(callback);
+
+  PyErr_Restore(type, value, traceback);
+
   Py_DECREF(py_incl_name);
   Py_DECREF(py_calling_fn);
   Py_DECREF(py_calling_ns);
 
-  const char* cstring_result = NULL;
   if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
   {
     //transferring string ownership to C code
