@@ -1776,12 +1776,14 @@ const char* yara_include_callback(
   }
   else
   {
-    if(PyErr_Occurred() == NULL)
+    if (PyErr_Occurred() == NULL)
     {
-      PyErr_Format(PyExc_TypeError, "'include_callback' callback function must return a yara rule or rules set formated as a single ascii or unicode string");
+      PyErr_Format(PyExc_TypeError,
+          "'include_callback' function must return a yara rules as an ascii "
+          "or unicode string");
     }
-    cstring_result = NULL;
   }
+
   Py_XDECREF(result);
   PyGILState_Release(gil_state);
 
@@ -1789,12 +1791,12 @@ const char* yara_include_callback(
 }
 
 void yara_include_free(
-  const char* result_ptr,
-  void* user_data)
+    const char* result_ptr,
+    void* user_data)
 {
-  if(result_ptr != NULL)
+  if (result_ptr != NULL)
   {
-    free((void*)result_ptr);
+    free((void*) result_ptr);
   }
 }
 
@@ -1951,12 +1953,15 @@ static PyObject* yara_compile(
     else if (file != NULL)
     {
       fd = dup(PyObject_AsFileDescriptor(file));
-      if (fd != -1) {
+
+      if (fd != -1)
+      {
         fh = fdopen(fd, "r");
         error = yr_compiler_add_file(compiler, fh, NULL, NULL);
         fclose(fh);
       }
-      else {
+      else
+      {
         result = PyErr_Format(
             PyExc_TypeError,
             "'file' is not a file object");
