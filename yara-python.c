@@ -1735,7 +1735,9 @@ const char* yara_include_callback(
   else //safeguard: should never happen for 'include_name'
   {
     py_incl_name = Py_None;
+    Py_INCREF(py_incl_name);
   }
+
   if (calling_rule_filename != NULL)
   {
     py_calling_fn = PY_STRING(calling_rule_filename);
@@ -1743,7 +1745,9 @@ const char* yara_include_callback(
   else
   {
     py_calling_fn = Py_None;
+    Py_INCREF(py_calling_fn);
   }
+
   if (calling_rule_namespace != NULL)
   {
     py_calling_ns = PY_STRING(calling_rule_namespace);
@@ -1751,6 +1755,7 @@ const char* yara_include_callback(
   else
   {
     py_calling_ns = Py_None;
+    Py_INCREF(py_calling_ns);
   }
 
   Py_INCREF(callback);
