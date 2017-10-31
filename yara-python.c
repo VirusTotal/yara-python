@@ -1902,10 +1902,12 @@ static PyObject* yara_compile(
     {
       if (!PyCallable_Check(include_callback))
       {
+        yr_compiler_destroy(compiler);
         return PyErr_Format(
             PyExc_TypeError,
             "'include_callback' must be callable");
       }
+
       Py_INCREF(include_callback);
       yr_compiler_set_include_callback(compiler,
                                        yara_include_callback,
