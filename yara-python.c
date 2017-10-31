@@ -1770,8 +1770,8 @@ const char* yara_include_callback(
 
   Py_DECREF(callback);
   Py_DECREF(py_incl_name);
-  Py_XDECREF(py_calling_fn);
-  Py_XDECREF(py_calling_ns);
+  Py_DECREF(py_calling_fn);
+  Py_DECREF(py_calling_ns);
 
   const char* cstring_result = NULL;
   if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
