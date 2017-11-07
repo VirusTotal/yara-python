@@ -163,16 +163,11 @@ class BuildExtCommand(build_ext):
     building_for_osx = 'macosx' in self.plat_name
     building_for_linux = 'linux' in self.plat_name
 
-    if not self.dynamic_linking and building_for_linux:
-      module.sources.append('yara/libyara/proc/linux.c')
-
-    if not self.dynamic_linking and building_for_windows:
-      module.sources.append('yara/libyara/proc/windows.c')
-
-    if not self.dynamic_linking and building_for_osx:
-      module.sources.append('yara/libyara/proc/match.c')
+    if building_for_linux:
+      module.define_macros.append(('USE_LINUX_PROC', '1'))
 
     if building_for_windows:
+      module.define_macros.append(('USE_WINDOW_PROC', '1'))
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
       module.libraries.append('kernel32')
       module.libraries.append('advapi32')
@@ -181,6 +176,7 @@ class BuildExtCommand(build_ext):
       module.libraries.append('ws2_32')
 
     if building_for_osx:
+      module.define_macros.append(('USE_MACH_PROC', '1'))
       module.include_dirs.append('/usr/local/opt/openssl/include')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
@@ -229,11 +225,10 @@ class BuildExtCommand(build_ext):
       exclusions = [os.path.normpath(x) for x in exclusions]
 
       for directory, _, files in os.walk('yara/libyara/'):
-        if directory != 'yara/libyara/proc':
-          for x in files:
-            x = os.path.normpath(os.path.join(directory, x))
-            if x.endswith('.c') and x not in exclusions:
-              module.sources.append(x)
+        for x in files:
+          x = os.path.normpath(os.path.join(directory, x))
+          if x.endswith('.c') and x not in exclusions:
+            module.sources.append(x)
 
     build_ext.run(self)
 
