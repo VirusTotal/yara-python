@@ -163,11 +163,16 @@ class BuildExtCommand(build_ext):
     building_for_osx = 'macosx' in self.plat_name
     building_for_linux = 'linux' in self.plat_name
 
-    if building_for_linux:
+    if not self.dynamic_linking and building_for_linux:
       module.sources.append('yara/libyara/proc/linux.c')
 
-    if building_for_windows:
+    if not self.dynamic_linking and building_for_windows:
       module.sources.append('yara/libyara/proc/windows.c')
+
+    if not self.dynamic_linking and building_for_osx:
+      module.sources.append('yara/libyara/proc/match.c')
+
+    if building_for_windows:
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
       module.libraries.append('kernel32')
       module.libraries.append('advapi32')
@@ -176,7 +181,6 @@ class BuildExtCommand(build_ext):
       module.libraries.append('ws2_32')
 
     if building_for_osx:
-      module.sources.append('yara/libyara/proc/mach.c')
       module.include_dirs.append('/usr/local/opt/openssl/include')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
