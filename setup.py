@@ -167,7 +167,7 @@ class BuildExtCommand(build_ext):
       module.define_macros.append(('USE_LINUX_PROC', '1'))
 
     if building_for_windows:
-      module.define_macros.append(('USE_WINDOW_PROC', '1'))
+      module.define_macros.append(('USE_WINDOWS_PROC', '1'))
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
       module.libraries.append('kernel32')
       module.libraries.append('advapi32')
