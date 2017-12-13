@@ -831,7 +831,7 @@ class TestYara(unittest.TestCase):
     def testCallback(self):
 
         global rule_data
-        rule_data = []
+        rule_data = None
 
         def callback(data):
             global rule_data
