@@ -718,7 +718,26 @@ int yara_callback(
     else
       object = PY_STRING(meta->string);
 
-    PyDict_SetItemString(meta_list, meta->identifier, object);
+    PyObject* existing_item = PyDict_GetItemString(meta_list, meta->identifier);
+    // There is already meta with this key
+    if (existing_item)
+    {
+      // The value is list so just append object
+      if (PyList_Check(existing_item))
+        PyList_Append(existing_item, object);
+      // The value is not list so create it and replace the original value in dict
+      else
+      {
+        PyObject* meta_sublist = PyList_New(0);
+        PyList_Append(meta_sublist, existing_item);
+        PyList_Append(meta_sublist, object);
+        PyDict_SetItemString(meta_list, meta->identifier, meta_sublist);
+        Py_DECREF(meta_sublist);
+      }
+    }
+    else
+      PyDict_SetItemString(meta_list, meta->identifier, object);
+
     Py_DECREF(object);
   }
 
