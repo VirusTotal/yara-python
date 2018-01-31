@@ -84,6 +84,7 @@ typedef struct
   PyObject* tags;
   PyObject* meta;
   PyObject* strings;
+  PyObject* _meta_with_dups;
 
 } Match;
 
@@ -123,6 +124,13 @@ static PyMemberDef Match_members[] = {
     READONLY,
     "Dictionary with offsets and strings that matched the file"
   },
+  {
+    "_meta_with_dups",
+    T_OBJECT_EX,
+    offsetof(Match, _meta_with_dups),
+    READONLY,
+    "Dictionary with metadata associated to the rule (with duplicates)"
+  },
   { NULL } // End marker
 };
 
@@ -130,7 +138,8 @@ static PyObject* Match_NEW(
     const char* rule,
     const char* ns,
     PyObject* tags,
-    PyObject* meta,
+    PyObject* meta_no_dups,
+    PyObject* meta_with_dups,
     PyObject* strings);
 
 static void Match_dealloc(
@@ -151,9 +160,18 @@ static PyObject* Match_richcompare(
 static Py_hash_t Match_hash(
     PyObject* self);
 
+static PyObject* Match_get_meta(
+    PyObject* self,
+    PyObject* args,
+    PyObject* keywords);
 
 static PyMethodDef Match_methods[] =
 {
+  {
+    "get_meta",
+    (PyCFunction) Match_get_meta,
+    METH_VARARGS | METH_KEYWORDS
+  },
   { NULL },
 };
 
@@ -576,7 +594,8 @@ int yara_callback(
 
   PyObject* tag_list = NULL;
   PyObject* string_list = NULL;
-  PyObject* meta_list = NULL;
+  PyObject* meta_list_no_dups = NULL;
+  PyObject* meta_list_with_dups = NULL;
   PyObject* match;
   PyObject* callback_dict;
   PyObject* object;
@@ -690,13 +709,15 @@ int yara_callback(
 
   tag_list = PyList_New(0);
   string_list = PyList_New(0);
-  meta_list = PyDict_New();
+  meta_list_no_dups = PyDict_New();
+  meta_list_with_dups = PyDict_New();
 
-  if (tag_list == NULL || string_list == NULL || meta_list == NULL)
+  if (tag_list == NULL || string_list == NULL || meta_list_no_dups == NULL || meta_list_with_dups == NULL)
   {
     Py_XDECREF(tag_list);
     Py_XDECREF(string_list);
-    Py_XDECREF(meta_list);
+    Py_XDECREF(meta_list_no_dups);
+    Py_XDECREF(meta_list_with_dups);
     PyGILState_Release(gil_state);
 
     return CALLBACK_ERROR;
@@ -718,7 +739,11 @@ int yara_callback(
     else
       object = PY_STRING(meta->string);
 
-    PyObject* existing_item = PyDict_GetItemString(meta_list, meta->identifier);
+    // Meta with no duplicates
+    PyDict_SetItemString(meta_list_no_dups, meta->identifier, object);
+
+    // Meta with duplicates
+    PyObject* existing_item = PyDict_GetItemString(meta_list_with_dups, meta->identifier);
     // There is already meta with this key
     if (existing_item)
     {
@@ -731,12 +756,12 @@ int yara_callback(
         PyObject* meta_sublist = PyList_New(0);
         PyList_Append(meta_sublist, existing_item);
         PyList_Append(meta_sublist, object);
-        PyDict_SetItemString(meta_list, meta->identifier, meta_sublist);
+        PyDict_SetItemString(meta_list_with_dups, meta->identifier, meta_sublist);
         Py_DECREF(meta_sublist);
       }
     }
     else
-      PyDict_SetItemString(meta_list, meta->identifier, object);
+      PyDict_SetItemString(meta_list_with_dups, meta->identifier, object);
 
     Py_DECREF(object);
   }
@@ -766,7 +791,8 @@ int yara_callback(
         rule->identifier,
         rule->ns->name,
         tag_list,
-        meta_list,
+        meta_list_no_dups,
+        meta_list_with_dups,
         string_list);
 
     if (match != NULL)
@@ -778,7 +804,8 @@ int yara_callback(
     {
       Py_DECREF(tag_list);
       Py_DECREF(string_list);
-      Py_DECREF(meta_list);
+      Py_DECREF(meta_list_no_dups);
+      Py_DECREF(meta_list_with_dups);
       PyGILState_Release(gil_state);
 
       return CALLBACK_ERROR;
@@ -806,7 +833,7 @@ int yara_callback(
     Py_DECREF(object);
 
     PyDict_SetItemString(callback_dict, "tags", tag_list);
-    PyDict_SetItemString(callback_dict, "meta", meta_list);
+    PyDict_SetItemString(callback_dict, "meta", meta_list_no_dups);
     PyDict_SetItemString(callback_dict, "strings", string_list);
 
     callback_result = PyObject_CallFunctionObjArgs(
@@ -838,7 +865,8 @@ int yara_callback(
 
   Py_DECREF(tag_list);
   Py_DECREF(string_list);
-  Py_DECREF(meta_list);
+  Py_DECREF(meta_list_no_dups);
+  Py_DECREF(meta_list_with_dups);
   PyGILState_Release(gil_state);
 
   return result;
@@ -1124,7 +1152,8 @@ static PyObject* Match_NEW(
     const char* rule,
     const char* ns,
     PyObject* tags,
-    PyObject* meta,
+    PyObject* meta_no_dups,
+    PyObject* meta_with_dups,
     PyObject* strings)
 {
   Match* object = PyObject_NEW(Match, &Match_Type);
@@ -1134,11 +1163,13 @@ static PyObject* Match_NEW(
     object->rule = PY_STRING(rule);
     object->ns = PY_STRING(ns);
     object->tags = tags;
-    object->meta = meta;
+    object->meta = meta_no_dups;
     object->strings = strings;
+    object->_meta_with_dups = meta_with_dups;
 
     Py_INCREF(tags);
-    Py_INCREF(meta);
+    Py_INCREF(meta_no_dups);
+    Py_INCREF(meta_with_dups);
     Py_INCREF(strings);
   }
 
@@ -1240,6 +1271,28 @@ static Py_hash_t Match_hash(
 {
   Match* match = (Match*) self;
   return PyObject_Hash(match->rule) + PyObject_Hash(match->ns);
+}
+
+static PyObject* Match_get_meta(
+    PyObject* self,
+    PyObject* args,
+    PyObject* keywords)
+{
+  static char* kwlist[] = { "allow_duplicates", NULL };
+
+  int allow_duplicates = 0;
+
+  if (!PyArg_ParseTupleAndKeywords(
+       args,
+       keywords,
+       "|p",
+       kwlist,
+       &allow_duplicates))
+  {
+    return NULL;
+  }
+
+  return PyObject_GetAttrString(self, allow_duplicates ? "_meta_with_dups" : "meta");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
