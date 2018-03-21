@@ -15,6 +15,8 @@ limitations under the License.
 */
 /* headers */
 
+#define PY_SSIZE_T_CLEAN
+
 #include <Python.h>
 #include "structmember.h"
 
@@ -1352,7 +1354,7 @@ static PyObject* Rules_match(
 
   int pid = 0;
   int timeout = 0;
-  int length;
+  Py_ssize_t length = 0;
   int error = ERROR_SUCCESS;
   int fast_mode = FALSE;
 
@@ -1472,7 +1474,7 @@ static PyObject* Rules_match(
       error = yr_rules_scan_mem(
           object->rules,
           (unsigned char*) data,
-          (unsigned int) length,
+          (size_t) length,
           fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
           yara_callback,
           &callback_data,
