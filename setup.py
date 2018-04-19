@@ -34,6 +34,7 @@ import subprocess
 OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
+   ('enable-dex', None, 'enable "dex" module'),
    ('enable-magic', None, 'enable "magic" module'),
    ('enable-dotnet', None, 'enable "dotnet" module'),
    ('enable-profiling', None, 'enable profiling features')]
@@ -42,6 +43,7 @@ OPTIONS = [
 BOOLEAN_OPTIONS = [
     'dynamic-linking',
     'enable-cuckoo',
+    'enable-dex',
     'enable-magic',
     'enable-dotnet',
     'enable-profiling']
@@ -95,6 +97,7 @@ class BuildCommand(build):
     self.dynamic_linking = None
     self.enable_magic = None
     self.enable_cuckoo = None
+    self.enable_dex = None
     self.enable_dotnet = None
     self.enable_profiling = None
 
@@ -115,6 +118,7 @@ class BuildExtCommand(build_ext):
     self.dynamic_linking = None
     self.enable_magic = None
     self.enable_cuckoo = None
+    self.enable_dex = None
     self.enable_dotnet = None
     self.enable_profiling = None
 
@@ -129,6 +133,7 @@ class BuildExtCommand(build_ext):
         ('dynamic_linking', 'dynamic_linking'),
         ('enable_magic', 'enable_magic'),
         ('enable_cuckoo', 'enable_cuckoo'),
+        ('enable_dex', 'enable_dex'),
         ('enable_dotnet', 'enable_dotnet'),
         ('enable_profiling', 'enable_profiling'))
 
@@ -138,6 +143,9 @@ class BuildExtCommand(build_ext):
     if self.enable_cuckoo and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-cuckoo can''t be used with --dynamic-linking')
+    if self.enable_dex and self.dynamic_linking:
+      raise distutils.errors.DistutilsOptionError(
+          '--enable-dex can''t be used with --dynamic-linking')
     if self.enable_dotnet and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-dotnet can''t be used with --dynamic-linking')
@@ -216,6 +224,11 @@ class BuildExtCommand(build_ext):
         module.libraries.append('jansson')
       else:
         exclusions.append('yara/libyara/modules/cuckoo.c')
+
+      if self.enable_dex:
+        module.define_macros.append(('DEX_MODULE', '1'))
+      else:
+        exclusions.append('yara/libyara/modules/dex.c')
 
       if self.enable_dotnet:
         module.define_macros.append(('DOTNET_MODULE', '1'))
