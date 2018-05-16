@@ -194,10 +194,12 @@ class BuildExtCommand(build_ext):
     if building_for_osx:
       module.define_macros.append(('USE_MACH_PROC', '1'))
       module.include_dirs.append('/usr/local/opt/openssl/include')
+      module.library_dirs.append('/usr/local/opt/openssl/lib')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
+      module.library_dirs.append('/usr/lib')
 
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
@@ -297,7 +299,7 @@ with open('README.rst', 'r', 'utf-8') as f:
 
 setup(
     name='yara-python',
-    version='3.7.0',
+    version='3.7.0.999',
     description='Python interface for YARA',
     long_description=readme,
     license='Apache 2.0',
