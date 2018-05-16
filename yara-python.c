@@ -73,6 +73,13 @@ https://plusvic.github.io/yara\n"
 #define strdup _strdup
 #endif
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 // Match object
 
 typedef struct
