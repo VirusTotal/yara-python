@@ -1354,7 +1354,7 @@ static PyObject* Rules_match(
   int timeout = 0;
   int length;
   int error = ERROR_SUCCESS;
-  int fast_mode = FALSE;
+  int fast_mode = 0;
 
   PyObject* externals = NULL;
   PyObject* fast = NULL;
