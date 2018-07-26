@@ -597,10 +597,6 @@ int yara_callback(
   if (message == CALLBACK_MSG_SCAN_FINISHED)
     return CALLBACK_CONTINUE;
 
-  if (which != (CALLBACK_ALL) && message == CALLBACK_MSG_RULE_NOT_MATCHING &&
-      (callback == NULL || (which & CALLBACK_MATCHES)))
-    return CALLBACK_CONTINUE;
-
   if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
     return CALLBACK_CONTINUE;
 
