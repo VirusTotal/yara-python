@@ -299,6 +299,6 @@ setup(
         'update': UpdateCommand},
     ext_modules=[Extension(
         name='yara',
-        extra_compile_args = ['-std=c99'],
+        language='c++11',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
         sources=['yara-python.c'])])
