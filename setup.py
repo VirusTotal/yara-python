@@ -130,6 +130,7 @@ class BuildExtCommand(build_ext):
         ('enable_magic', 'enable_magic'),
         ('enable_cuckoo', 'enable_cuckoo'),
         ('enable_dotnet', 'enable_dotnet'),
+        ('enable_dex', 'enable_dex'),
         ('enable_profiling', 'enable_profiling'))
 
     if self.enable_magic and self.dynamic_linking:
@@ -141,6 +142,9 @@ class BuildExtCommand(build_ext):
     if self.enable_dotnet and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-dotnet can''t be used with --dynamic-linking')
+    if self.enable_dex and self.dynamic_linking:
+      raise distutils.errors.DistutilsOptionError(
+          '--enable-dex can''t be used with --dynamic-linking')
 
   def run(self):
     """Execute the build command."""
@@ -235,6 +239,11 @@ class BuildExtCommand(build_ext):
         module.define_macros.append(('DOTNET_MODULE', '1'))
       else:
         exclusions.append('yara/libyara/modules/dotnet.c')
+
+      if self.enable_dex:
+        module.define_macros.append(('DEX_MODULE', '1'))
+      else:
+        exclusions.append('yara/libyara/modules/dex.c')
 
       exclusions = [os.path.normpath(x) for x in exclusions]
 
