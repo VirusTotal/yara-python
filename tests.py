@@ -813,6 +813,21 @@ class TestYara(unittest.TestCase):
         r = yara.compile(source='rule test { condition: ext_str matches /ssi$/ }', externals={'ext_str': 'mississippi'})
         self.assertFalse(r.match(data='dummy'))
 
+    def testCallbackAll(self):
+        global rule_data
+        rule_data = []
+
+        def callback(data):
+            global rule_data
+            rule_data.append(data)
+            return yara.CALLBACK_CONTINUE
+
+
+        r = yara.compile(source='rule t { condition: true } rule f { condition: false }')
+        r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_ALL)
+
+        self.assertTrue(len(rule_data) == 2)
+
     def testCallback(self):
 
         global rule_data
@@ -833,6 +848,13 @@ class TestYara(unittest.TestCase):
 
         r = yara.compile(source='rule test { condition: false }')
         r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_NON_MATCHES)
+
+        self.assertTrue(rule_data['rule'] == 'test')
+
+        rule_data = None
+
+        r = yara.compile(source='rule test { condition: true }')
+        r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_MATCHES)
 
         self.assertTrue(rule_data['rule'] == 'test')
 
