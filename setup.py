@@ -36,6 +36,7 @@ OPTIONS = [
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
    ('enable-magic', None, 'enable "magic" module'),
    ('enable-dotnet', None, 'enable "dotnet" module'),
+   ('enable-dex', None, 'enable "dex" module'),
    ('enable-profiling', None, 'enable profiling features')]
 
 
@@ -44,6 +45,7 @@ BOOLEAN_OPTIONS = [
     'enable-cuckoo',
     'enable-magic',
     'enable-dotnet',
+    'enable-dex',
     'enable-profiling']
 
 
@@ -96,6 +98,7 @@ class BuildCommand(build):
     self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_dotnet = None
+    self.enable_dex = None
     self.enable_profiling = None
 
   def finalize_options(self):
@@ -116,6 +119,7 @@ class BuildExtCommand(build_ext):
     self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_dotnet = None
+    self.enable_dex = None
     self.enable_profiling = None
 
   def finalize_options(self):
