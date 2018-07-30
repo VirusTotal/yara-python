@@ -37,6 +37,7 @@ OPTIONS = [
    ('enable-magic', None, 'enable "magic" module'),
    ('enable-dotnet', None, 'enable "dotnet" module'),
    ('enable-dex', None, 'enable "dex" module'),
+   ('enable-macho', None, 'enable "macho" module'),
    ('enable-profiling', None, 'enable profiling features')]
 
 
@@ -46,6 +47,7 @@ BOOLEAN_OPTIONS = [
     'enable-magic',
     'enable-dotnet',
     'enable-dex',
+    'enable-macho',
     'enable-profiling']
 
 
@@ -99,6 +101,7 @@ class BuildCommand(build):
     self.enable_cuckoo = None
     self.enable_dotnet = None
     self.enable_dex = None
+    self.enable_macho = None
     self.enable_profiling = None
 
   def finalize_options(self):
@@ -120,6 +123,7 @@ class BuildExtCommand(build_ext):
     self.enable_cuckoo = None
     self.enable_dotnet = None
     self.enable_dex = None
+    self.enable_macho = None
     self.enable_profiling = None
 
   def finalize_options(self):
@@ -135,6 +139,7 @@ class BuildExtCommand(build_ext):
         ('enable_cuckoo', 'enable_cuckoo'),
         ('enable_dotnet', 'enable_dotnet'),
         ('enable_dex', 'enable_dex'),
+        ('enable_macho', 'enable_macho'),
         ('enable_profiling', 'enable_profiling'))
 
     if self.enable_magic and self.dynamic_linking:
@@ -149,6 +154,9 @@ class BuildExtCommand(build_ext):
     if self.enable_dex and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-dex can''t be used with --dynamic-linking')
+    if self.enable_macho and self.dynamic_linking:
+      raise distutils.errors.DistutilsOptionError(
+          '--enable-macho can''t be used with --dynamic-linking')
 
   def run(self):
     """Execute the build command."""
@@ -248,6 +256,11 @@ class BuildExtCommand(build_ext):
         module.define_macros.append(('DEX_MODULE', '1'))
       else:
         exclusions.append('yara/libyara/modules/dex.c')
+
+      if self.enable_macho:
+        module.define_macros.append(('MACHO_MODULE', '1'))
+      else:
+        exclusions.append('yara/libyara/modules/macho.c')
 
       exclusions = [os.path.normpath(x) for x in exclusions]
 
