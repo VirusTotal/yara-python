@@ -162,11 +162,12 @@ class BuildExtCommand(build_ext):
     building_for_windows = self.plat_name in ('win32','win-amd64')
     building_for_osx = 'macosx' in self.plat_name
     building_for_linux = 'linux' in self.plat_name
+    building_for_freebsd = 'freebsd' in self.plat_name
+    building_for_openbsd = 'openbsd' in self.plat_name # need testing
 
     if building_for_linux:
       module.define_macros.append(('USE_LINUX_PROC', '1'))
-
-    if building_for_windows:
+    elif building_for_windows:
       module.define_macros.append(('USE_WINDOWS_PROC', '1'))
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
       module.libraries.append('kernel32')
@@ -174,14 +175,27 @@ class BuildExtCommand(build_ext):
       module.libraries.append('user32')
       module.libraries.append('crypt32')
       module.libraries.append('ws2_32')
-
-    if building_for_osx:
+    elif building_for_osx:
       module.define_macros.append(('USE_MACH_PROC', '1'))
       module.include_dirs.append('/usr/local/opt/openssl/include')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
+    elif building_for_freebsd:
+      module.define_macros.append(('USE_FREEBSD_PROC', '1'))
+      module.include_dirs.append('/opt/local/include')
+      module.library_dirs.append('/opt/local/lib')
+      module.include_dirs.append('/usr/local/include')
+      module.library_dirs.append('/usr/local/lib')
+    elif building_for_openbsd:
+      module.define_macros.append(('USE_OPENBSD_PROC', '1'))
+      module.include_dirs.append('/opt/local/include')
+      module.library_dirs.append('/opt/local/lib')
+      module.include_dirs.append('/usr/local/include')
+      module.library_dirs.append('/usr/local/lib')
+    else:
+      module.define_macros.append(('USE_NO_PROC', '1'))
 
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
