@@ -1894,7 +1894,7 @@ static PyObject* yara_compile(
       if (PyBool_Check(includes))
       {
         // PyObject_IsTrue can return -1 in case of error
-        if (PyObject_IsTrue(includes) == 1)
+        if (PyObject_IsTrue(includes) == 0)
           yr_compiler_set_include_callback(compiler, NULL, NULL, NULL);
       }
       else

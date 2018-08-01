@@ -755,7 +755,7 @@ class TestYara(unittest.TestCase):
         r = yara.compile(p2)
         self.assertTrue(len(r.match(data='dummy')) == 2)
 
-        self.assertRaises(yara.SyntaxError, yara.compile, source='include "test"', includes=False)
+        self.assertRaises(yara.SyntaxError, yara.compile, source='include "test2"', includes=False)
 
     def testExternals(self):
 
