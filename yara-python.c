@@ -1836,21 +1836,28 @@ static PyObject* yara_set_config(
         &stack_size,
         &max_strings_per_rule))
   {
-    if(stack_size != 0) {
-      if((error = yr_set_configuration(YR_CONFIG_STACK_SIZE,
-				       &stack_size)) != ERROR_SUCCESS) {
+    if (stack_size != 0)
+    {
+      error = yr_set_configuration(
+          YR_CONFIG_STACK_SIZE,
+          &stack_size);
+
+      if ( error != ERROR_SUCCESS)
         return handle_error(error, NULL);
-      }
     }
-    if(max_strings_per_rule != 0) {
-      if((error = yr_set_configuration(YR_CONFIG_MAX_STRINGS_PER_RULE,
-				       &max_strings_per_rule)) != ERROR_SUCCESS) {
+
+    if (max_strings_per_rule != 0)
+    {
+      error = yr_set_configuration(
+          YR_CONFIG_MAX_STRINGS_PER_RULE,
+				  &max_strings_per_rule);
+
+      if (error != ERROR_SUCCESS)
         return handle_error(error, NULL);
-      }
     }
   }
 
-  return Py_BuildValue("");
+  Py_RETURN_NONE;
 }
 
 static PyObject* yara_compile(

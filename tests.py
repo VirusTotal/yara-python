@@ -1000,6 +1000,16 @@ class TestYara(unittest.TestCase):
         r = next(it)
         self.assertTrue(r.identifier == 'test3')
 
+    def testSetConfig(self):
+
+        yara.set_config(max_strings_per_rule=1)
+
+        self.assertSyntaxError(['''
+            rule test { strings: $a = "1" $b = "2" condition: all of them }
+            '''])
+
+        yara.set_config(max_strings_per_rule=10000)
+
 
 if __name__ == "__main__":
     unittest.main()
