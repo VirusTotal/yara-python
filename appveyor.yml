@@ -60,6 +60,30 @@ environment:
       OPENSSL_LIB: "openssl-1.1.0e-vs2015"
       VS: "Visual Studio 14 2015 Win64"
 
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.6
+      PYTHON_ARCH: "32"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      VS: "Visual Studio 14 2015"
+
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.6
+      PYTHON_ARCH: "64"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      VS: "Visual Studio 14 2015 Win64"
+
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7.x" # currently 3.7.0
+      PYTHON_ARCH: "32"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      VS: "Visual Studio 14 2015"
+
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.x" # currently 3.7.0
+      PYTHON_ARCH: "64"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      VS: "Visual Studio 14 2015 Win64"
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
