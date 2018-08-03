@@ -1512,7 +1512,18 @@ static PyObject* Rules_match(
 
       if (error != ERROR_CALLBACK_ERROR)
       {
-        handle_error(error, filepath);
+        if (filepath != NULL)
+        {
+          handle_error(error, filepath);
+        }
+        else if (data != NULL)
+        {
+          handle_error(error, "<data>");
+        }
+        else if (pid != 0)
+        {
+          handle_error(error, "<proc>");
+        }
 
         #ifdef PROFILING_ENABLED
         PyObject* exception = PyErr_Occurred();
