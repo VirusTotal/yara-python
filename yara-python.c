@@ -1810,6 +1810,49 @@ void yara_include_free(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static PyObject* yara_set_config(
+    PyObject* self,
+    PyObject* args,
+    PyObject* keywords)
+{
+
+  /*
+   * It is recommended that this be kept up to date with the config
+   * options present in yara/libyara.c yr_set_configuration(...) - ck
+   */
+  static char *kwlist[] = {
+    "stack_size", "max_strings_per_rule", NULL};
+
+  unsigned int stack_size = 0;
+  unsigned int max_strings_per_rule = 0;
+
+  int error = 0;
+
+  if (PyArg_ParseTupleAndKeywords(
+        args,
+        keywords,
+        "|II",
+        kwlist,
+        &stack_size,
+        &max_strings_per_rule))
+  {
+    if(stack_size != 0) {
+      if((error = yr_set_configuration(YR_CONFIG_STACK_SIZE,
+				       &stack_size)) != ERROR_SUCCESS) {
+        return handle_error(error, NULL);
+      }
+    }
+    if(max_strings_per_rule != 0) {
+      if((error = yr_set_configuration(YR_CONFIG_MAX_STRINGS_PER_RULE,
+				       &max_strings_per_rule)) != ERROR_SUCCESS) {
+        return handle_error(error, NULL);
+      }
+    }
+  }
+
+  return Py_BuildValue("");
+}
+
 static PyObject* yara_compile(
     PyObject* self,
     PyObject* args,
@@ -2238,6 +2281,12 @@ static PyMethodDef yara_methods[] = {
     (PyCFunction) yara_load,
     METH_VARARGS | METH_KEYWORDS,
     "Loads a previously saved YARA rules file and returns an instance of class Rules"
+  },
+  {
+    "set_config",
+    (PyCFunction) yara_set_config,
+    METH_VARARGS | METH_KEYWORDS,
+    "Set a yara configuration variable (stack_size or max_strings_per_rule)"
   },
   { NULL, NULL }
 };
