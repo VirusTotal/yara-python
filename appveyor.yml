@@ -140,7 +140,7 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
-    -DHASH_MODULE -DHAVE_LIBCRYPTO
+    -DHASH_MODULE,HAVE_LIBCRYPTO
     -llibcryptoMT"
 
 after_build:
@@ -164,5 +164,6 @@ artifacts:
 #  - TODO: upload the content of dist/*.whl to a public wheelhouse
 #
 
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+# Uncomment these lines for enabling Remote Desktop for debugging purposes.
+# on_finish:
+#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
