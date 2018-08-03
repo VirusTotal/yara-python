@@ -72,17 +72,20 @@ environment:
       OPENSSL_LIB: "openssl-1.1.0e-vs2015"
       VS: "Visual Studio 14 2015 Win64"
 
-    - PYTHON: "C:\\Python37"
-      PYTHON_VERSION: "3.7.x" # currently 3.7.0
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
-      VS: "Visual Studio 14 2015"
+    # Do not build with Python 3.7 until the fix for this issue is published:
+    # https://bugs.python.org/issue34251
+    #
+    #- PYTHON: "C:\\Python37"
+    #  PYTHON_VERSION: "3.7.x" # currently 3.7.0
+    #  PYTHON_ARCH: "32"
+    #  OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+    #  VS: "Visual Studio 14 2015"
 
-    - PYTHON: "C:\\Python37-x64"
-      PYTHON_VERSION: "3.7.x" # currently 3.7.0
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
-      VS: "Visual Studio 14 2015 Win64"
+    #- PYTHON: "C:\\Python37-x64"
+    #  PYTHON_VERSION: "3.7.x" # currently 3.7.0
+    #  PYTHON_ARCH: "64"
+    #  OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+    #  VS: "Visual Studio 14 2015 Win64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
