@@ -316,7 +316,7 @@ setup(
     long_description=readme,
     license='Apache 2.0',
     author='Victor M. Alvarez',
-    author_email='plusvic@gmail.com;vmalvarez@virustotal.com',
+    author_email='plusvic@gmail.com, vmalvarez@virustotal.com',
     url='https://github.com/VirusTotal/yara-python',
     zip_safe=False,
     cmdclass={
