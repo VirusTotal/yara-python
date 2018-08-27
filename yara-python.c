@@ -47,8 +47,7 @@ typedef long Py_hash_t;
 
 #if PY_MAJOR_VERSION >= 3
 #define PY_STRING(x) PyUnicode_FromString(x)
-#define PY_STRING_TO_C(x) PyBytes_AsString(\
-                            PyUnicode_AsEncodedString(x, "utf-8", "strict"))
+#define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
 #define PY_STRING_CHECK(x) PyUnicode_Check(x)
 #else
 #define PY_STRING(x) PyString_FromString(x)
