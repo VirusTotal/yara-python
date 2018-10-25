@@ -424,7 +424,7 @@ PyObject* convert_object_to_python(
   {
     case OBJECT_TYPE_INTEGER:
       if (object->value.i != UNDEFINED)
-        result = Py_BuildValue("i", object->value.i);
+        result = Py_BuildValue("l", object->value.i);
       break;
 
     case OBJECT_TYPE_STRING:
