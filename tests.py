@@ -813,6 +813,10 @@ class TestYara(unittest.TestCase):
         r = yara.compile(source='rule test { condition: ext_str matches /ssi$/ }', externals={'ext_str': 'mississippi'})
         self.assertFalse(r.match(data='dummy'))
 
+        self.assertRaises(UnicodeEncodeError, yara.compile,
+            source="rule test { condition: true}",
+            externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' })
+
     def testCallbackAll(self):
         global rule_data
         rule_data = []

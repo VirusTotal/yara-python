@@ -1002,10 +1002,13 @@ int process_compile_externals(
     }
     else if (PY_STRING_CHECK(value))
     {
+      char* str = PY_STRING_TO_C(value);
+
+      if (str == NULL)
+        return ERROR_INVALID_ARGUMENT;
+
       result = yr_compiler_define_string_variable(
-          compiler,
-          identifier,
-          PY_STRING_TO_C(value));
+          compiler, identifier, str);
     }
     else
     {
@@ -1069,10 +1072,13 @@ int process_match_externals(
     }
     else if (PY_STRING_CHECK(value))
     {
+      char* str = PY_STRING_TO_C(value);
+
+      if (str == NULL)
+        return ERROR_INVALID_ARGUMENT;
+
       result = yr_rules_define_string_variable(
-          rules,
-          identifier,
-          PY_STRING_TO_C(value));
+          rules, identifier, str);
     }
     else
     {
