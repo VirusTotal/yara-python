@@ -755,7 +755,7 @@ class TestYara(unittest.TestCase):
         r = yara.compile(p2)
         self.assertTrue(len(r.match(data='dummy')) == 2)
 
-        self.assertRaises(yara.SyntaxError, yara.compile, source='include "test"', includes=False)
+        self.assertRaises(yara.SyntaxError, yara.compile, source='include "test2"', includes=False)
 
     def testExternals(self):
 
@@ -813,6 +813,30 @@ class TestYara(unittest.TestCase):
         r = yara.compile(source='rule test { condition: ext_str matches /ssi$/ }', externals={'ext_str': 'mississippi'})
         self.assertFalse(r.match(data='dummy'))
 
+        if sys.version_info[0] >= 3:
+            self.assertTrue(yara.compile(
+                source="rule test { condition: true}",
+                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' }))
+        else:
+            self.assertRaises(UnicodeEncodeError, yara.compile,
+                source="rule test { condition: true}",
+                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' })
+
+    def testCallbackAll(self):
+        global rule_data
+        rule_data = []
+
+        def callback(data):
+            global rule_data
+            rule_data.append(data)
+            return yara.CALLBACK_CONTINUE
+
+
+        r = yara.compile(source='rule t { condition: true } rule f { condition: false }')
+        r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_ALL)
+
+        self.assertTrue(len(rule_data) == 2)
+
     def testCallback(self):
 
         global rule_data
@@ -833,6 +857,13 @@ class TestYara(unittest.TestCase):
 
         r = yara.compile(source='rule test { condition: false }')
         r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_NON_MATCHES)
+
+        self.assertTrue(rule_data['rule'] == 'test')
+
+        rule_data = None
+
+        r = yara.compile(source='rule test { condition: true }')
+        r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_MATCHES)
 
         self.assertTrue(rule_data['rule'] == 'test')
 
@@ -977,6 +1008,16 @@ class TestYara(unittest.TestCase):
         self.assertTrue(r.identifier == 'test2')
         r = next(it)
         self.assertTrue(r.identifier == 'test3')
+
+    def testSetConfig(self):
+
+        yara.set_config(max_strings_per_rule=1)
+
+        self.assertSyntaxError(['''
+            rule test { strings: $a = "1" $b = "2" condition: all of them }
+            '''])
+
+        yara.set_config(max_strings_per_rule=10000)
 
 
 if __name__ == "__main__":

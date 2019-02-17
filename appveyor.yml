@@ -8,35 +8,18 @@ environment:
 
   matrix:
 
-    # Python versions not pre-installed
-
-    # Python 2.6.6 is the latest Python 2.6 with a Windows installer
-    # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
-
-    - PYTHON: "C:\\Python266"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
-      VS: "Visual Studio 9 2008"
-
-    - PYTHON: "C:\\Python266-x64"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
-      VS: "Visual Studio 9 2008 Win64"
-
     # Pre-installed Python versions, which Appveyor may upgrade to
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.13
+      PYTHON_VERSION: "2.7.x" # currently 2.7.15
       PYTHON_ARCH: "32"
       OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008"
 
     - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.13
+      PYTHON_VERSION: "2.7.x" # currently 2.7.15
       PYTHON_ARCH: "64"
       OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008 Win64"
@@ -77,6 +60,33 @@ environment:
       OPENSSL_LIB: "openssl-1.1.0e-vs2015"
       VS: "Visual Studio 14 2015 Win64"
 
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.6
+      PYTHON_ARCH: "32"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      VS: "Visual Studio 14 2015"
+
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.6
+      PYTHON_ARCH: "64"
+      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      VS: "Visual Studio 14 2015 Win64"
+
+    # Do not build with Python 3.7 until the fix for this issue is published:
+    # https://bugs.python.org/issue34251
+    #
+    #- PYTHON: "C:\\Python37"
+    #  PYTHON_VERSION: "3.7.x" # currently 3.7.0
+    #  PYTHON_ARCH: "32"
+    #  OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+    #  VS: "Visual Studio 14 2015"
+
+    #- PYTHON: "C:\\Python37-x64"
+    #  PYTHON_VERSION: "3.7.x" # currently 3.7.0
+    #  PYTHON_ARCH: "64"
+    #  OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+    #  VS: "Visual Studio 14 2015 Win64"
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
@@ -107,7 +117,7 @@ install:
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "pip install --disable-pip-version-check --user --upgrade pip"
+  - "python -m pip install --disable-pip-version-check --user --upgrade pip"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
@@ -157,7 +167,7 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
     -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
-    -DHASH_MODULE -DHAVE_LIBCRYPTO
+    -DHASH_MODULE,HAVE_LIBCRYPTO
     -llibcryptoMT"
 
 after_build:
@@ -180,3 +190,7 @@ artifacts:
 #on_success:
 #  - TODO: upload the content of dist/*.whl to a public wheelhouse
 #
+
+# Uncomment these lines for enabling Remote Desktop for debugging purposes.
+# on_finish:
+#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

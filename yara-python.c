@@ -15,6 +15,8 @@ limitations under the License.
 */
 /* headers */
 
+#define PY_SSIZE_T_CLEAN
+
 #include <Python.h>
 #include "structmember.h"
 
@@ -45,8 +47,7 @@ typedef long Py_hash_t;
 
 #if PY_MAJOR_VERSION >= 3
 #define PY_STRING(x) PyUnicode_FromString(x)
-#define PY_STRING_TO_C(x) PyBytes_AsString(\
-                            PyUnicode_AsEncodedString(x, "utf-8", "strict"))
+#define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
 #define PY_STRING_CHECK(x) PyUnicode_Check(x)
 #else
 #define PY_STRING(x) PyString_FromString(x)
@@ -430,7 +431,7 @@ PyObject* convert_object_to_python(
   {
     case OBJECT_TYPE_INTEGER:
       if (object->value.i != UNDEFINED)
-        result = Py_BuildValue("i", object->value.i);
+        result = Py_BuildValue("l", object->value.i);
       break;
 
     case OBJECT_TYPE_STRING:
@@ -602,10 +603,6 @@ int yara_callback(
   int result = CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_SCAN_FINISHED)
-    return CALLBACK_CONTINUE;
-
-  if (message == CALLBACK_MSG_RULE_NOT_MATCHING &&
-      (callback == NULL || (which & CALLBACK_MATCHES)))
     return CALLBACK_CONTINUE;
 
   if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
@@ -1012,10 +1009,13 @@ int process_compile_externals(
     }
     else if (PY_STRING_CHECK(value))
     {
+      char* str = PY_STRING_TO_C(value);
+
+      if (str == NULL)
+        return ERROR_INVALID_ARGUMENT;
+
       result = yr_compiler_define_string_variable(
-          compiler,
-          identifier,
-          PY_STRING_TO_C(value));
+          compiler, identifier, str);
     }
     else
     {
@@ -1079,10 +1079,13 @@ int process_match_externals(
     }
     else if (PY_STRING_CHECK(value))
     {
+      char* str = PY_STRING_TO_C(value);
+
+      if (str == NULL)
+        return ERROR_INVALID_ARGUMENT;
+
       result = yr_rules_define_string_variable(
-          rules,
-          identifier,
-          PY_STRING_TO_C(value));
+          rules, identifier, str);
     }
     else
     {
@@ -1359,9 +1362,9 @@ static PyObject* Rules_match(
 
   int pid = 0;
   int timeout = 0;
-  int length;
+  Py_ssize_t length = 0;
   int error = ERROR_SUCCESS;
-  int fast_mode = FALSE;
+  int fast_mode = 0;
 
   PyObject* externals = NULL;
   PyObject* fast = NULL;
@@ -1479,7 +1482,7 @@ static PyObject* Rules_match(
       error = yr_rules_scan_mem(
           object->rules,
           (unsigned char*) data,
-          (unsigned int) length,
+          (size_t) length,
           fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
           yara_callback,
           &callback_data,
@@ -1521,7 +1524,18 @@ static PyObject* Rules_match(
 
       if (error != ERROR_CALLBACK_ERROR)
       {
-        handle_error(error, filepath);
+        if (filepath != NULL)
+        {
+          handle_error(error, filepath);
+        }
+        else if (data != NULL)
+        {
+          handle_error(error, "<data>");
+        }
+        else if (pid != 0)
+        {
+          handle_error(error, "<proc>");
+        }
 
         #ifdef PROFILING_ENABLED
         PyObject* exception = PyErr_Occurred();
@@ -1819,6 +1833,56 @@ void yara_include_free(
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static PyObject* yara_set_config(
+    PyObject* self,
+    PyObject* args,
+    PyObject* keywords)
+{
+
+  /*
+   * It is recommended that this be kept up to date with the config
+   * options present in yara/libyara.c yr_set_configuration(...) - ck
+   */
+  static char *kwlist[] = {
+    "stack_size", "max_strings_per_rule", NULL};
+
+  unsigned int stack_size = 0;
+  unsigned int max_strings_per_rule = 0;
+
+  int error = 0;
+
+  if (PyArg_ParseTupleAndKeywords(
+        args,
+        keywords,
+        "|II",
+        kwlist,
+        &stack_size,
+        &max_strings_per_rule))
+  {
+    if (stack_size != 0)
+    {
+      error = yr_set_configuration(
+          YR_CONFIG_STACK_SIZE,
+          &stack_size);
+
+      if ( error != ERROR_SUCCESS)
+        return handle_error(error, NULL);
+    }
+
+    if (max_strings_per_rule != 0)
+    {
+      error = yr_set_configuration(
+          YR_CONFIG_MAX_STRINGS_PER_RULE,
+				  &max_strings_per_rule);
+
+      if (error != ERROR_SUCCESS)
+        return handle_error(error, NULL);
+    }
+  }
+
+  Py_RETURN_NONE;
+}
+
 static PyObject* yara_compile(
     PyObject* self,
     PyObject* args,
@@ -1903,7 +1967,7 @@ static PyObject* yara_compile(
       if (PyBool_Check(includes))
       {
         // PyObject_IsTrue can return -1 in case of error
-        if (PyObject_IsTrue(includes) == 1)
+        if (PyObject_IsTrue(includes) == 0)
           yr_compiler_set_include_callback(compiler, NULL, NULL, NULL);
       }
       else
@@ -2247,6 +2311,12 @@ static PyMethodDef yara_methods[] = {
     (PyCFunction) yara_load,
     METH_VARARGS | METH_KEYWORDS,
     "Loads a previously saved YARA rules file and returns an instance of class Rules"
+  },
+  {
+    "set_config",
+    (PyCFunction) yara_set_config,
+    METH_VARARGS | METH_KEYWORDS,
+    "Set a yara configuration variable (stack_size or max_strings_per_rule)"
   },
   { NULL, NULL }
 };
