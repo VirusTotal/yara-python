@@ -2372,9 +2372,9 @@ MOD_INIT(yara)
   if (PyType_Ready(&Match_Type) < 0)
     return MOD_ERROR_VAL;
 
-  PyModule_AddObject(m, "Rule", &Rule_Type);
-  PyModule_AddObject(m, "Rules", &Rules_Type);
-  PyModule_AddObject(m, "Match", &Match_Type);
+  PyModule_AddObject(m, "Rule", (PyObject*) &Rule_Type);
+  PyModule_AddObject(m, "Rules", (PyObject*) &Rules_Type);
+  PyModule_AddObject(m, "Match",  (PyObject*) &Match_Type);
 
   PyModule_AddObject(m, "Error", YaraError);
   PyModule_AddObject(m, "SyntaxError", YaraSyntaxError);
