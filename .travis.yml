@@ -1,6 +1,5 @@
 language: python
 
-dist: xenial   # required for Python >= 3.7
 python:
   - "2.6"
   - "2.7"
@@ -8,8 +7,12 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7"
-  - "pypy"
+
+matrix:
+  include:
+    - python: "3.7"
+      dist: xenial
+      sudo: true
 
 before_install:
   - sudo apt-get -qq update
