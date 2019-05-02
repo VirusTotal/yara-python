@@ -1,5 +1,6 @@
 language: python
 
+dist: xenial   # required for Python >= 3.7
 python:
   - "2.6"
   - "2.7"
