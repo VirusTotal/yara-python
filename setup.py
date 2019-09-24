@@ -318,6 +318,12 @@ setup(
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com, vmalvarez@virustotal.com',
     url='https://github.com/VirusTotal/yara-python',
+    classifiers=[
+        'Programming Language :: Python',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: OS Independent',
+        'Development Status :: 5 - Production/Stable',
+    ],
     zip_safe=False,
     cmdclass={
         'build': BuildCommand,
