@@ -53,7 +53,7 @@ dynamically against a shared ``libyara`` library use:
 
 .. code-block:: bash
 
-  $ sudo python setup.py install --dynamic-linking
+  $ python setup.py build --dynamic-linking
 
 For this option to work you must build and install
 `YARA <https://github.com/VirusTotal/yara>`_ separately before installing
