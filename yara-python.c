@@ -1848,10 +1848,11 @@ static PyObject* yara_set_config(
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|II",
+        "|III",
         kwlist,
         &stack_size,
-        &max_strings_per_rule))
+        &max_strings_per_rule
+  	&max_match_data))
   {
     if (stack_size != 0)
     {
