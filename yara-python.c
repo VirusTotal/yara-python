@@ -1837,20 +1837,22 @@ static PyObject* yara_set_config(
    * options present in yara/libyara.c yr_set_configuration(...) - ck
    */
   static char *kwlist[] = {
-    "stack_size", "max_strings_per_rule", NULL};
+    "stack_size", "max_strings_per_rule", "max_match_data", NULL};
 
   unsigned int stack_size = 0;
   unsigned int max_strings_per_rule = 0;
+  unsigned int max_match_data = 0;
 
   int error = 0;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|II",
+        "|III",
         kwlist,
         &stack_size,
-        &max_strings_per_rule))
+        &max_strings_per_rule,
+  	&max_match_data))
   {
     if (stack_size != 0)
     {
@@ -1867,6 +1869,16 @@ static PyObject* yara_set_config(
       error = yr_set_configuration(
           YR_CONFIG_MAX_STRINGS_PER_RULE,
 				  &max_strings_per_rule);
+
+      if (error != ERROR_SUCCESS)
+        return handle_error(error, NULL);
+    }
+
+    if (max_match_data != 0)
+    {
+      error = yr_set_configuration(
+          YR_CONFIG_MAX_MATCH_DATA,
+				  &max_match_data);
 
       if (error != ERROR_SUCCESS)
         return handle_error(error, NULL);
@@ -2309,7 +2321,7 @@ static PyMethodDef yara_methods[] = {
     "set_config",
     (PyCFunction) yara_set_config,
     METH_VARARGS | METH_KEYWORDS,
-    "Set a yara configuration variable (stack_size or max_strings_per_rule)"
+    "Set a yara configuration variable (stack_size, max_strings_per_rule, or max_match_data)"
   },
   { NULL, NULL }
 };
