@@ -121,7 +121,7 @@ static PyMemberDef Match_members[] = {
     T_OBJECT_EX,
     offsetof(Match, strings),
     READONLY,
-    "Dictionary with offsets and strings that matched the file"
+    "Tuple with offsets and strings that matched the file"
   },
   { NULL } // End marker
 };
