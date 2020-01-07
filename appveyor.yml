@@ -61,13 +61,13 @@ environment:
       VS: "Visual Studio 14 2015 Win64"
 
     - PYTHON: "C:\\Python38"
-      PYTHON_VERSION: "3.8.x"
+      PYTHON_VERSION: "3.8.x" # currently 3.8.0
       PYTHON_ARCH: "32"
       OPENSSL_LIB: "openssl-1.1.0e-vs2015"
-      VS: "Visual Studio 14 2015 Win64"
+      VS: "Visual Studio 14 2015"
 
     - PYTHON: "C:\\Python38-x64"
-      PYTHON_VERSION: "3.8.x"
+      PYTHON_VERSION: "3.8.x" # currently 3.8.0
       PYTHON_ARCH: "64"
       OPENSSL_LIB: "openssl-1.1.0e-vs2015"
       VS: "Visual Studio 14 2015 Win64"
