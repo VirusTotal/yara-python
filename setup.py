@@ -262,6 +262,10 @@ class BuildExtCommand(build_ext):
       else:
         exclusions.append('yara/libyara/modules/macho/macho.c')
 
+      # exclude pb_tests module
+      exclusions.append('yara/libyara/modules/pb_tests/pb_tests.c')
+      exclusions.append('yara/libyara/modules/pb_tests/pb_tests.pb-c.c')
+
       exclusions = [os.path.normpath(x) for x in exclusions]
 
       for directory, _, files in os.walk('yara/libyara/'):
