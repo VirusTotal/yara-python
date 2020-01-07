@@ -508,7 +508,7 @@ PyObject* convert_array_to_python(
   if (array->items == NULL)
     return py_list;
 
-  for (i = 0; i < array->items->count; i++)
+  for (i = 0; i < array->items->length; i++)
   {
     py_object = convert_object_to_python(array->items->objects[i]);
 
