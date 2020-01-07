@@ -991,7 +991,7 @@ int process_compile_externals(
       result = yr_compiler_define_integer_variable(
           compiler,
           identifier,
-          PyLong_AsLong(value));
+          PyLong_AsLongLong(value));
     }
     else if (PyFloat_Check(value))
     {
@@ -1061,7 +1061,7 @@ int process_match_externals(
       result = yr_rules_define_integer_variable(
           rules,
           identifier,
-          PyLong_AsLong(value));
+          PyLong_AsLongLong(value));
     }
     else if (PyFloat_Check(value))
     {
