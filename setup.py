@@ -233,34 +233,34 @@ class BuildExtCommand(build_ext):
           module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
           module.libraries.append('crypto')
         else:
-          exclusions.append('yara/libyara/modules/hash.c')
+          exclusions.append('yara/libyara/modules/hash/hash.c')
 
       if self.enable_magic:
         module.define_macros.append(('MAGIC_MODULE', '1'))
         module.libraries.append('magic')
       else:
-        exclusions.append('yara/libyara/modules/magic.c')
+        exclusions.append('yara/libyara/modules/magic/magic.c')
 
       if self.enable_cuckoo:
         module.define_macros.append(('CUCKOO_MODULE', '1'))
         module.libraries.append('jansson')
       else:
-        exclusions.append('yara/libyara/modules/cuckoo.c')
+        exclusions.append('yara/libyara/modules/cuckoo/cuckoo.c')
 
       if self.enable_dotnet:
         module.define_macros.append(('DOTNET_MODULE', '1'))
       else:
-        exclusions.append('yara/libyara/modules/dotnet.c')
+        exclusions.append('yara/libyara/modules/dotnet/dotnet.c')
 
       if self.enable_dex:
         module.define_macros.append(('DEX_MODULE', '1'))
       else:
-        exclusions.append('yara/libyara/modules/dex.c')
+        exclusions.append('yara/libyara/modules/dex/dex.c')
 
       if self.enable_macho:
         module.define_macros.append(('MACHO_MODULE', '1'))
       else:
-        exclusions.append('yara/libyara/modules/macho.c')
+        exclusions.append('yara/libyara/modules/macho/macho.c')
 
       exclusions = [os.path.normpath(x) for x in exclusions]
 
