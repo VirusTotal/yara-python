@@ -24,30 +24,6 @@ environment:
       OPENSSL_LIB: "openssl-1.1.0e-vs2008"
       VS: "Visual Studio 9 2008 Win64"
 
-    - PYTHON: "C:\\Python33"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
-      VS: "Visual Studio 10 2010"
-
-    - PYTHON: "C:\\Python33-x64"
-      PYTHON_VERSION: "3.3.x" # currently 3.3.5
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
-      VS: "Visual Studio 10 2010 Win64"
-
-    - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.4
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
-      VS: "Visual Studio 10 2010"
-
-    - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.x" # currently 3.4.4
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2010"
-      VS: "Visual Studio 10 2010 Win64"
-
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x" # currently 3.5.4
       PYTHON_ARCH: "32"
