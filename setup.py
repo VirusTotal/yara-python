@@ -184,6 +184,7 @@ class BuildExtCommand(build_ext):
     if building_for_linux:
       module.define_macros.append(('USE_LINUX_PROC', '1'))
     elif building_for_windows:
+      module.extra_compile_args.append('/TP')
       module.define_macros.append(('USE_WINDOWS_PROC', '1'))
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
       module.libraries.append('kernel32')
