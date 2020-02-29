@@ -1019,6 +1019,18 @@ class TestYara(unittest.TestCase):
 
         yara.set_config(max_strings_per_rule=10000)
 
+    def testGlobalPrivate(self):
+
+        rules = """
+        global rule a { condition: true }
+        private rule b { condition: true }
+        """
+
+        # Have to convert to a list because Rules are not subscriptable, yet...
+        r = list(yara.compile(source=rules))
+        self.assertTrue(r[0].is_global == True)
+        self.assertTrue(r[1].is_private == True)
+
 
 if __name__ == "__main__":
     unittest.main()
