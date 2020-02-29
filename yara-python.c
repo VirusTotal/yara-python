@@ -1255,6 +1255,8 @@ static void Rule_dealloc(
   Py_XDECREF(object->identifier);
   Py_XDECREF(object->tags);
   Py_XDECREF(object->meta);
+  Py_XDECREF(object->global);
+  Py_XDECREF(object->private);
   PyObject_Del(self);
 }
 
