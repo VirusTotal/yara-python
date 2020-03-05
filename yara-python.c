@@ -546,7 +546,7 @@ PyObject* convert_dictionary_to_python(
     {
       PyDict_SetItemString(
           py_dict,
-          dictionary->items->objects[i].key,
+          dictionary->items->objects[i].key->c_string,
           py_object);
 
       Py_DECREF(py_object);
@@ -562,6 +562,7 @@ PyObject* convert_dictionary_to_python(
 #define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
 
 int yara_callback(
+    YR_SCAN_CONTEXT* context,
     int message,
     void* message_data,
     void* user_data)
@@ -724,7 +725,7 @@ int yara_callback(
 
   yr_rule_strings_foreach(rule, string)
   {
-    yr_string_matches_foreach(string, m)
+    yr_string_matches_foreach(context, string, m)
     {
       object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
 
@@ -740,7 +741,7 @@ int yara_callback(
       Py_DECREF(tuple);
     }
   }
-
+  
   if (message == CALLBACK_MSG_RULE_MATCHING)
   {
     match = Match_NEW(
@@ -1455,7 +1456,6 @@ static PyObject* Rules_match(
       callback_data.matches = PyList_New(0);
 
       Py_BEGIN_ALLOW_THREADS
-
       error = yr_rules_scan_file(
           object->rules,
           filepath,
@@ -1463,6 +1463,7 @@ static PyObject* Rules_match(
           yara_callback,
           &callback_data,
           timeout);
+
 
       Py_END_ALLOW_THREADS
     }
