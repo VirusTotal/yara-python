@@ -145,6 +145,7 @@ build_script:
 
 after_build:
   - "%CMD_IN_ENV% python setup.py install"
+  - "%CMD_IN_ENV% python -v tests.py"
 
 # test_script:
   # Run the project tests
