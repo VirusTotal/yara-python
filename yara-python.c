@@ -423,7 +423,7 @@ PyObject* convert_object_to_python(
   switch(object->type)
   {
     case OBJECT_TYPE_INTEGER:
-      if (object->value.i != UNDEFINED)
+      if (object->value.i != YR_UNDEFINED)
         result = Py_BuildValue("l", object->value.i);
       break;
 
@@ -741,7 +741,7 @@ int yara_callback(
       Py_DECREF(tuple);
     }
   }
-  
+
   if (message == CALLBACK_MSG_RULE_MATCHING)
   {
     match = Match_NEW(
@@ -1665,6 +1665,7 @@ void raise_exception_on_error(
     int error_level,
     const char* file_name,
     int line_number,
+    const YR_RULE* rule,
     const char* message,
     void* user_data)
 {
@@ -1691,6 +1692,7 @@ void raise_exception_on_error_or_warning(
     int error_level,
     const char* file_name,
     int line_number,
+    const YR_RULE* rule,
     const char* message,
     void* user_data)
 {
