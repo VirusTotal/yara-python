@@ -139,17 +139,13 @@ build_script:
   # Build the compiled extension
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
-    -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
-    -DHASH_MODULE,HAVE_LIBCRYPTO
-    -llibcryptoMT"
+    -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include"
 
 after_build:
   - "%CMD_IN_ENV% python setup.py install"
-  - "%CMD_IN_ENV% python -v tests.py"
 
-# test_script:
-  # Run the project tests
-#  - "%CMD_IN_ENV% python -v tests.py"
+test_script:
+  - "%CMD_IN_ENV% python tests.py"
 
 after_test:
   # If tests are successful, create binary packages for the project.
