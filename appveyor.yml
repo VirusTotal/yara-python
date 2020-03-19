@@ -102,10 +102,10 @@ install:
   # latest version of wheel.
   - "%CMD_IN_ENV% pip install wheel==0.29.0"
 
-  # Downlad precompiled OpenSSL library.
+  # Download precompiled OpenSSL library.
   - cd ..
   - ps: Invoke-WebRequest "$env:OPENSSL_LIB" -OutFile "openssl.7z"
-  - 7z x openssl.7z
+  - 7z x -oopenssl openssl.7z
   - cd yara-python
 
   # Download and build jansson library.
