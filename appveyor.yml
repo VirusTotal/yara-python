@@ -102,14 +102,14 @@ install:
   # latest version of wheel.
   - "%CMD_IN_ENV% pip install wheel==0.29.0"
 
-  # Download precompiled OpenSSL library.
+  # We are in projects/yara-python, lets go out to projects.
   - cd ..
+
+  # Download precompiled OpenSSL library.
   - ps: Invoke-WebRequest "$env:OPENSSL_LIB" -OutFile "openssl.zip"
   - ps: Expand-Archive openssl.zip -DestinationPath openssl
-  - cd yara-python
 
   # Download and build jansson library.
-  - cd ..
   - ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v$env:JANSSON_VERSION.zip" -OutFile "jansson.zip"
   - ps: Expand-Archive jansson.zip -DestinationPath .
   - cd jansson-%JANSSON_VERSION%
@@ -117,6 +117,9 @@ install:
   - cd build
   - cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_WITHOUT_TESTS=ON -G "%VS%" ..
   - cmake --build . --config Release
+
+  # We are in projects/jansson-%JANSSON_VERSION%/build, lets move to
+  # projects/yara-python
   - cd ../../yara-python
 
 
@@ -163,5 +166,5 @@ deploy:
 #
 
 # Uncomment these lines for enabling Remote Desktop for debugging purposes.
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
