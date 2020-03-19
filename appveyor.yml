@@ -12,18 +12,6 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.16
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
-      VS: "Visual Studio 9 2008"
-
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.16
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
-      VS: "Visual Studio 9 2008 Win64"
-
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x" # currently 3.5.4
       PYTHON_ARCH: "32"
@@ -187,5 +175,5 @@ deploy:
 #
 
 # Uncomment these lines for enabling Remote Desktop for debugging purposes.
-# on_finish:
-#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+ on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
