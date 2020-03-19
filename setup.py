@@ -221,7 +221,7 @@ class BuildExtCommand(build_ext):
       module.define_macros.append(('HAVE_STRLCAT', '1'))
 
     if self.enable_profiling:
-      module.define_macros.append(('PROFILING_ENABLED', '1'))
+      module.define_macros.append(('YR_PROFILING_ENABLED', '1'))
 
     if self.dynamic_linking:
       module.libraries.append('yara')
@@ -315,7 +315,7 @@ with open('README.rst', 'r', 'utf-8') as f:
 
 setup(
     name='yara-python',
-    version='3.11.0',
+    version='4.0.0',
     description='Python interface for YARA',
     long_description=readme,
     license='Apache 2.0',

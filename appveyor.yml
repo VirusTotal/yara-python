@@ -12,64 +12,52 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.16
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
-      VS: "Visual Studio 9 2008"
-
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.x" # currently 2.7.16
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2008"
-      VS: "Visual Studio 9 2008 Win64"
-
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x" # currently 3.5.4
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
       VS: "Visual Studio 14 2015"
 
     - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.x" # currently 3.5.4
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
       VS: "Visual Studio 14 2015 Win64"
 
     - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6.x" # currently 3.6.8
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
       VS: "Visual Studio 14 2015"
 
     - PYTHON: "C:\\Python36-x64"
       PYTHON_VERSION: "3.6.x" # currently 3.6.8
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
       VS: "Visual Studio 14 2015 Win64"
 
     - PYTHON: "C:\\Python37"
       PYTHON_VERSION: "3.7.x" # currently 3.7.0
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
       VS: "Visual Studio 14 2015"
 
     - PYTHON: "C:\\Python37-x64"
       PYTHON_VERSION: "3.7.x" # currently 3.7.0
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
       VS: "Visual Studio 14 2015 Win64"
 
     - PYTHON: "C:\\Python38"
       PYTHON_VERSION: "3.8.x" # currently 3.8.0
       PYTHON_ARCH: "32"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
       VS: "Visual Studio 14 2015"
 
     - PYTHON: "C:\\Python38-x64"
       PYTHON_VERSION: "3.8.x" # currently 3.8.0
       PYTHON_ARCH: "64"
-      OPENSSL_LIB: "openssl-1.1.0e-vs2015"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
       VS: "Visual Studio 14 2015 Win64"
 
 install:
@@ -114,25 +102,14 @@ install:
   # latest version of wheel.
   - "%CMD_IN_ENV% pip install wheel==0.29.0"
 
+  # We are in projects/yara-python, lets go out to projects.
   - cd ..
-  - ps: Invoke-WebRequest "https://www.npcglib.org/~stathis/downloads/$env:OPENSSL_LIB.7z" -OutFile "openssl.7z"
-  - 7z x openssl.7z
-  - cd yara-python
 
-  - ps: >-
-      If ($env:PYTHON_ARCH -Match "32") {
-        $env:OPENSSL_LIB_DIR="lib"
-      } Else {
-        $env:OPENSSL_LIB_DIR="lib64"
-      }
+  # Download precompiled OpenSSL library.
+  - ps: Invoke-WebRequest "$env:OPENSSL_LIB" -OutFile "openssl.zip"
+  - ps: Expand-Archive openssl.zip -DestinationPath openssl
 
-  # This is workaround for solving an issue caused by CMake not finding an
-  # appropriate compilet for Visual Studio 9 2008 Win64. This workaround was
-  # copied from: https://github.com/conda/conda-build/blob/master/appveyor.yml
-  - call appveyor\setup_x64.bat
-
-  # Download and build jansson library
-  - cd ..
+  # Download and build jansson library.
   - ps: Invoke-WebRequest "https://github.com/akheron/jansson/archive/v$env:JANSSON_VERSION.zip" -OutFile "jansson.zip"
   - ps: Expand-Archive jansson.zip -DestinationPath .
   - cd jansson-%JANSSON_VERSION%
@@ -140,6 +117,9 @@ install:
   - cd build
   - cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_WITHOUT_TESTS=ON -G "%VS%" ..
   - cmake --build . --config Release
+
+  # We are in projects/jansson-%JANSSON_VERSION%/build, lets move to
+  # projects/yara-python
   - cd ../../yara-python
 
 
@@ -150,16 +130,15 @@ clone_script:
 build_script:
   # Build the compiled extension
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
-    -L../jansson-%JANSSON_VERSION%/build/lib/Release;../%OPENSSL_LIB%/%OPENSSL_LIB_DIR%
-    -I../jansson-%JANSSON_VERSION%/build/include;../%OPENSSL_LIB%/include
+    -L../jansson-%JANSSON_VERSION%/build/lib/Release;../openssl/lib
+    -I../jansson-%JANSSON_VERSION%/build/include;../openssl/include
     -DHASH_MODULE,HAVE_LIBCRYPTO
-    -llibcryptoMT"
+    -llibcrypto"
 
 after_build:
   - "%CMD_IN_ENV% python setup.py install"
 
 test_script:
-  # Run the project tests
   - "%CMD_IN_ENV% python tests.py"
 
 after_test:
@@ -187,5 +166,5 @@ deploy:
 #
 
 # Uncomment these lines for enabling Remote Desktop for debugging purposes.
-# on_finish:
-#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
