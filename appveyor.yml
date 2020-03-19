@@ -104,8 +104,8 @@ install:
 
   # Download precompiled OpenSSL library.
   - cd ..
-  - ps: Invoke-WebRequest "$env:OPENSSL_LIB" -OutFile "openssl.7z"
-  - 7z x -oopenssl openssl.7z
+  - ps: Invoke-WebRequest "$env:OPENSSL_LIB" -OutFile "openssl.zip"
+  - ps: Expand-Archive openssl.zip -DestinationPath openssl
   - cd yara-python
 
   # Download and build jansson library.
@@ -129,6 +129,7 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../openssl/lib
     -I../jansson-%JANSSON_VERSION%/build/include;../openssl/include
+    -DHASH_MODULE,HAVE_LIBCRYPTO
     -llibcrypto"
 
 after_build:
