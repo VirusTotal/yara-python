@@ -1344,8 +1344,8 @@ static PyObject* Rules_next(
       Py_DECREF(object);
     }
 
-    rule->global = PyBool_FromLong(rules->iter_current_rule->g_flags & RULE_GFLAGS_GLOBAL);
-    rule->private = PyBool_FromLong(rules->iter_current_rule->g_flags & RULE_GFLAGS_PRIVATE);
+    rule->global = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_GLOBAL);
+    rule->private = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_PRIVATE);
     rule->identifier = PY_STRING(rules->iter_current_rule->identifier);
     rule->tags = tag_list;
     rule->meta = meta_list;
