@@ -439,7 +439,7 @@ PyObject* convert_object_to_python(
   switch(object->type)
   {
     case OBJECT_TYPE_INTEGER:
-      if (object->value.i != UNDEFINED)
+      if (object->value.i != YR_UNDEFINED)
         result = Py_BuildValue("l", object->value.i);
       break;
 
@@ -562,7 +562,7 @@ PyObject* convert_dictionary_to_python(
     {
       PyDict_SetItemString(
           py_dict,
-          dictionary->items->objects[i].key,
+          dictionary->items->objects[i].key->c_string,
           py_object);
 
       Py_DECREF(py_object);
@@ -578,6 +578,7 @@ PyObject* convert_dictionary_to_python(
 #define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
 
 int yara_callback(
+    YR_SCAN_CONTEXT* context,
     int message,
     void* message_data,
     void* user_data)
@@ -740,7 +741,7 @@ int yara_callback(
 
   yr_rule_strings_foreach(rule, string)
   {
-    yr_string_matches_foreach(string, m)
+    yr_string_matches_foreach(context, string, m)
     {
       object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
 
@@ -1475,7 +1476,6 @@ static PyObject* Rules_match(
       callback_data.matches = PyList_New(0);
 
       Py_BEGIN_ALLOW_THREADS
-
       error = yr_rules_scan_file(
           object->rules,
           filepath,
@@ -1483,6 +1483,7 @@ static PyObject* Rules_match(
           yara_callback,
           &callback_data,
           timeout);
+
 
       Py_END_ALLOW_THREADS
     }
@@ -1684,6 +1685,7 @@ void raise_exception_on_error(
     int error_level,
     const char* file_name,
     int line_number,
+    const YR_RULE* rule,
     const char* message,
     void* user_data)
 {
@@ -1710,6 +1712,7 @@ void raise_exception_on_error_or_warning(
     int error_level,
     const char* file_name,
     int line_number,
+    const YR_RULE* rule,
     const char* message,
     void* user_data)
 {
