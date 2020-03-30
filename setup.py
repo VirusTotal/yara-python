@@ -31,6 +31,10 @@ import shutil
 import subprocess
 
 
+if sys.version_info < (3,2):
+  sys.exit('Python 3.2 or newer is required')
+
+
 OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
@@ -328,6 +332,7 @@ setup(
         'Operating System :: OS Independent',
         'Development Status :: 5 - Production/Stable',
     ],
+    python_requires='>=3',
     zip_safe=False,
     cmdclass={
         'build': BuildCommand,

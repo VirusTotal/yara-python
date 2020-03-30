@@ -18,41 +18,15 @@ limitations under the License.
 #define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
-#include "structmember.h"
 
-#if PY_VERSION_HEX >= 0x02060000
+#include "structmember.h"
 #include "bytesobject.h"
-#elif PY_VERSION_HEX < 0x02060000
-#define PyBytes_AsString PyString_AsString
-#define PyBytes_Check PyString_Check
-#define PyBytes_FromStringAndSize PyString_FromStringAndSize
-#endif
 
 #include <time.h>
 #include <yara.h>
 
-#if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
-typedef int Py_ssize_t;
-#define PY_SSIZE_T_MAX INT_MAX
-#define PY_SSIZE_T_MIN INT_MIN
-#endif
-
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
-#if PY_VERSION_HEX < 0x03020000
-typedef long Py_hash_t;
-#endif
-
-#if PY_MAJOR_VERSION >= 3
-#define PY_STRING(x) PyUnicode_FromString(x)
-#define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
-#define PY_STRING_CHECK(x) PyUnicode_Check(x)
-#else
-#define PY_STRING(x) PyString_FromString(x)
-#define PY_STRING_TO_C(x) PyString_AsString(x)
-#define PY_STRING_CHECK(x) (PyString_Check(x) || PyUnicode_Check(x))
 #endif
 
 /* Module globals */
@@ -67,7 +41,7 @@ static PyObject* YaraWarningError = NULL;
 This module allows you to apply YARA rules to files or strings.\n\
 \n\
 For complete documentation please visit:\n\
-https://plusvic.github.io/yara\n"
+https://virustotal.github.io/yara\n"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <string.h>
@@ -614,23 +588,12 @@ int yara_callback(
         modules_data,
         module_import->module_name);
 
-    #if PY_MAJOR_VERSION >= 3
     if (module_data != NULL && PyBytes_Check(module_data))
-    #else
-    if (module_data != NULL && PyString_Check(module_data))
-    #endif
     {
-      #if PY_MAJOR_VERSION >= 3
       PyBytes_AsStringAndSize(
           module_data,
           (char**) &module_import->module_data,
           &data_size);
-      #else
-      PyString_AsStringAndSize(
-          module_data,
-          (char**) &module_import->module_data,
-          &data_size);
-      #endif
 
       module_import->module_data_size = data_size;
     }
@@ -649,7 +612,7 @@ int yara_callback(
     if (module_info_dict == NULL)
       return CALLBACK_CONTINUE;
 
-    object = PY_STRING(object_as_structure(message_data)->identifier);
+    object = PyUnicode_FromString(object_as_structure(message_data)->identifier);
     PyDict_SetItemString(module_info_dict, "module", object);
     Py_DECREF(object);
 
@@ -662,11 +625,7 @@ int yara_callback(
 
     if (callback_result != NULL)
     {
-      #if PY_MAJOR_VERSION >= 3
       if (PyLong_Check(callback_result))
-      #else
-      if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
-      #endif
       {
         result = (int) PyLong_AsLong(callback_result);
       }
@@ -705,7 +664,7 @@ int yara_callback(
 
   yr_rule_tags_foreach(rule, tag)
   {
-    object = PY_STRING(tag);
+    object = PyUnicode_FromString(tag);
     PyList_Append(tag_list, object);
     Py_DECREF(object);
   }
@@ -717,7 +676,7 @@ int yara_callback(
     else if (meta->type == META_TYPE_BOOLEAN)
       object = PyBool_FromLong((long) meta->integer);
     else
-      object = PY_STRING(meta->string);
+      object = PyUnicode_FromString(meta->string);
 
     PyDict_SetItemString(meta_list, meta->identifier, object);
     Py_DECREF(object);
@@ -779,11 +738,11 @@ int yara_callback(
     PyDict_SetItemString(callback_dict, "matches", object);
     Py_DECREF(object);
 
-    object = PY_STRING(rule->identifier);
+    object = PyUnicode_FromString(rule->identifier);
     PyDict_SetItemString(callback_dict, "rule", object);
     Py_DECREF(object);
 
-    object = PY_STRING(rule->ns->name);
+    object = PyUnicode_FromString(rule->ns->name);
     PyDict_SetItemString(callback_dict, "namespace", object);
     Py_DECREF(object);
 
@@ -798,11 +757,7 @@ int yara_callback(
 
     if (callback_result != NULL)
     {
-      #if PY_MAJOR_VERSION >= 3
       if (PyLong_Check(callback_result))
-      #else
-      if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
-      #endif
       {
         result = (int) PyLong_AsLong(callback_result);
       }
@@ -888,11 +843,7 @@ static size_t flo_write(
     PyGILState_STATE gil_state = PyGILState_Ensure();
 
     PyObject* result = PyObject_CallMethod(
-    #if PY_MAJOR_VERSION >= 3
         (PyObject*) user_data, "write", "y#", (char*) ptr + i * size, size);
-    #else
-        (PyObject*) user_data, "write", "s#", (char*) ptr + i * size, size);
-    #endif
 
     PyGILState_Release(gil_state);
 
@@ -974,7 +925,7 @@ int process_compile_externals(
 
   while (PyDict_Next(externals, &pos, &key, &value))
   {
-    identifier = PY_STRING_TO_C(key);
+    identifier = PyUnicode_AsUTF8(key);
 
     if (PyBool_Check(value))
     {
@@ -983,11 +934,7 @@ int process_compile_externals(
           identifier,
           PyObject_IsTrue(value));
     }
-#if PY_MAJOR_VERSION >= 3
     else if (PyLong_Check(value))
-#else
-    else if (PyLong_Check(value) || PyInt_Check(value))
-#endif
     {
       result = yr_compiler_define_integer_variable(
           compiler,
@@ -1001,9 +948,9 @@ int process_compile_externals(
           identifier,
           PyFloat_AsDouble(value));
     }
-    else if (PY_STRING_CHECK(value))
+    else if (PyUnicode_Check(value))
     {
-      char* str = PY_STRING_TO_C(value);
+      char* str = PyUnicode_AsUTF8(value);
 
       if (str == NULL)
         return ERROR_INVALID_ARGUMENT;
@@ -1044,7 +991,7 @@ int process_match_externals(
 
   while (PyDict_Next(externals, &pos, &key, &value))
   {
-    identifier = PY_STRING_TO_C(key);
+    identifier = PyUnicode_AsUTF8(key);
 
     if (PyBool_Check(value))
     {
@@ -1053,11 +1000,7 @@ int process_match_externals(
           identifier,
           PyObject_IsTrue(value));
     }
-#if PY_MAJOR_VERSION >= 3
     else if (PyLong_Check(value))
-#else
-    else if (PyLong_Check(value) || PyInt_Check(value))
-#endif
     {
       result = yr_rules_define_integer_variable(
           rules,
@@ -1071,9 +1014,9 @@ int process_match_externals(
           identifier,
           PyFloat_AsDouble(value));
     }
-    else if (PY_STRING_CHECK(value))
+    else if (PyUnicode_Check(value))
     {
-      char* str = PY_STRING_TO_C(value);
+      char* str = PyUnicode_AsUTF8(value);
 
       if (str == NULL)
         return ERROR_INVALID_ARGUMENT;
@@ -1119,8 +1062,8 @@ static PyObject* Match_NEW(
 
   if (object != NULL)
   {
-    object->rule = PY_STRING(rule);
-    object->ns = PY_STRING(ns);
+    object->rule = PyUnicode_FromString(rule);
+    object->ns = PyUnicode_FromString(ns);
     object->tags = tags;
     object->meta = meta;
     object->strings = strings;
@@ -1308,7 +1251,7 @@ static PyObject* Rules_next(
   {
     yr_rule_tags_foreach(rules->iter_current_rule, tag)
     {
-      object = PY_STRING(tag);
+      object = PyUnicode_FromString(tag);
       PyList_Append(tag_list, object);
       Py_DECREF(object);
     }
@@ -1320,13 +1263,13 @@ static PyObject* Rules_next(
       else if (meta->type == META_TYPE_BOOLEAN)
         object = PyBool_FromLong((long) meta->integer);
       else
-        object = PY_STRING(meta->string);
+        object = PyUnicode_FromString(meta->string);
 
       PyDict_SetItemString(meta_list, meta->identifier, object);
       Py_DECREF(object);
     }
 
-    rule->identifier = PY_STRING(rules->iter_current_rule->identifier);
+    rule->identifier = PyUnicode_FromString(rules->iter_current_rule->identifier);
     rule->tags = tag_list;
     rule->meta = meta_list;
     rules->iter_current_rule++;
@@ -1753,7 +1696,7 @@ const char* yara_include_callback(
 
   if (include_name != NULL)
   {
-    py_incl_name = PY_STRING(include_name);
+    py_incl_name = PyUnicode_FromString(include_name);
   }
   else //safeguard: should never happen for 'include_name'
   {
@@ -1763,7 +1706,7 @@ const char* yara_include_callback(
 
   if (calling_rule_filename != NULL)
   {
-    py_calling_fn = PY_STRING(calling_rule_filename);
+    py_calling_fn = PyUnicode_FromString(calling_rule_filename);
   }
   else
   {
@@ -1773,7 +1716,7 @@ const char* yara_include_callback(
 
   if (calling_rule_namespace != NULL)
   {
-    py_calling_ns = PY_STRING(calling_rule_namespace);
+    py_calling_ns = PyUnicode_FromString(calling_rule_namespace);
   }
   else
   {
@@ -1796,10 +1739,10 @@ const char* yara_include_callback(
   Py_DECREF(py_calling_fn);
   Py_DECREF(py_calling_ns);
 
-  if (result != NULL && result != Py_None && PY_STRING_CHECK(result))
+  if (result != NULL && result != Py_None && PyUnicode_Check(result))
   {
     //transferring string ownership to C code
-    cstring_result = strdup(PY_STRING_TO_C(result));
+    cstring_result = strdup(PyUnicode_AsUTF8(result));
   }
   else
   {
@@ -2066,8 +2009,8 @@ static PyObject* yara_compile(
       {
         while (PyDict_Next(sources_dict, &pos, &key, &value))
         {
-          source = PY_STRING_TO_C(value);
-          ns = PY_STRING_TO_C(key);
+          source = PyUnicode_AsUTF8(value);
+          ns = PyUnicode_AsUTF8(key);
 
           if (source != NULL && ns != NULL)
           {
@@ -2099,8 +2042,8 @@ static PyObject* yara_compile(
       {
         while (PyDict_Next(filepaths_dict, &pos, &key, &value))
         {
-          filepath = PY_STRING_TO_C(value);
-          ns = PY_STRING_TO_C(key);
+          filepath = PyUnicode_AsUTF8(value);
+          ns = PyUnicode_AsUTF8(key);
 
           if (filepath != NULL && ns != NULL)
           {
@@ -2290,7 +2233,7 @@ static PyObject* yara_load(
         PyDict_SetItemString(
             rules->externals,
             external->identifier,
-            PY_STRING(external->value.s));
+            PyUnicode_FromString(external->value.s));
         break;
     }
 
@@ -2329,7 +2272,6 @@ static PyMethodDef yara_methods[] = {
   { NULL, NULL }
 };
 
-#if PY_MAJOR_VERSION >= 3
 #define MOD_ERROR_VAL NULL
 #define MOD_SUCCESS_VAL(val) val
 #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
@@ -2337,13 +2279,6 @@ static PyMethodDef yara_methods[] = {
       static struct PyModuleDef moduledef = { \
         PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
       ob = PyModule_Create(&moduledef);
-#else
-#define MOD_ERROR_VAL
-#define MOD_SUCCESS_VAL(val)
-#define MOD_INIT(name) void init##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-      ob = Py_InitModule3(name, methods, doc);
-#endif
 
 
 MOD_INIT(yara)
@@ -2366,17 +2301,10 @@ MOD_INIT(yara)
   PyModule_AddStringConstant(m, "YARA_VERSION", YR_VERSION);
   PyModule_AddIntConstant(m, "YARA_VERSION_HEX", YR_VERSION_HEX);
 
-#if PYTHON_API_VERSION >= 1007
   YaraError = PyErr_NewException("yara.Error", PyExc_Exception, NULL);
   YaraSyntaxError = PyErr_NewException("yara.SyntaxError", YaraError, NULL);
   YaraTimeoutError = PyErr_NewException("yara.TimeoutError", YaraError, NULL);
   YaraWarningError = PyErr_NewException("yara.WarningError", YaraError, NULL);
-#else
-  YaraError = Py_BuildValue("s", "yara.Error");
-  YaraSyntaxError = Py_BuildValue("s", "yara.SyntaxError");
-  YaraTimeoutError = Py_BuildValue("s", "yara.TimeoutError");
-  YaraWarningError = Py_BuildValue("s", "yara.WarningError");
-#endif
 
   if (PyType_Ready(&Rule_Type) < 0)
     return MOD_ERROR_VAL;
