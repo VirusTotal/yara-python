@@ -717,10 +717,22 @@ int yara_callback(
     else if (meta->type == META_TYPE_BOOLEAN)
       object = PyBool_FromLong((long) meta->integer);
     else
+    {
       object = PY_STRING(meta->string);
+      if (object == NULL)
+      {
+        // The PY_STRING() call failed, likely because the metadata value is not
+        // valid unicode, so let's clear the error and treat it as bytes.
+        PyErr_Clear();
+        object = PyBytes_FromString(meta->string);
+      }
+    }
 
-    PyDict_SetItemString(meta_list, meta->identifier, object);
-    Py_DECREF(object);
+    if (object != NULL)
+    {
+      PyDict_SetItemString(meta_list, meta->identifier, object);
+      Py_DECREF(object);
+    }
   }
 
   yr_rule_strings_foreach(rule, string)
@@ -1320,10 +1332,17 @@ static PyObject* Rules_next(
       else if (meta->type == META_TYPE_BOOLEAN)
         object = PyBool_FromLong((long) meta->integer);
       else
+      {
         object = PY_STRING(meta->string);
+        if (object == NULL)
+          object = PyBytes_FromString(meta->string);
+      }
 
-      PyDict_SetItemString(meta_list, meta->identifier, object);
-      Py_DECREF(object);
+      if (object != NULL)
+      {
+        PyDict_SetItemString(meta_list, meta->identifier, object);
+        Py_DECREF(object);
+      }
     }
 
     rule->identifier = PY_STRING(rules->iter_current_rule->identifier);
