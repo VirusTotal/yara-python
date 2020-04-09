@@ -20,11 +20,7 @@ import os
 import sys
 import unittest
 import yara
-# Python 2/3
-try:
-    import StringIO
-except:
-    import io
+import io
 
 PE32_FILE = binascii.unhexlify('\
 4d5a000000000000000000000000000000000000000000000000000000000000\
@@ -939,11 +935,7 @@ class TestYara(unittest.TestCase):
 
     def testStringIO(self):
 
-        # Python 2/3
-        try:
-            stream = StringIO.StringIO()
-        except:
-            stream = io.BytesIO()
+        stream = io.BytesIO()
 
         r1 = yara.compile(source='rule test { condition: true }')
         r1.save(file=stream)
