@@ -300,10 +300,7 @@ class TestYara(unittest.TestCase):
           if expected_result == SUCCEED:
             self.assertTrue(matches)
             _, _, matching_string = matches[0].strings[0]
-            if sys.version_info[0] >= 3:
-              self.assertTrue(matching_string == bytes(test[3], 'utf-8'))
-            else:
-              self.assertTrue(matching_string == test[3])
+            self.assertTrue(matching_string == bytes(test[3], 'utf-8'))
           else:
             self.assertFalse(matches)
 
@@ -551,10 +548,7 @@ class TestYara(unittest.TestCase):
         rules = yara.compile(source='rule test { strings: $a = { 61 [0-3] (62|63) } condition: $a }')
         matches = rules.match(data='abbb')
 
-        if sys.version_info[0] >= 3:
-          self.assertTrue(matches[0].strings == [(0, '$a', bytes('ab', 'utf-8'))])
-        else:
-          self.assertTrue(matches[0].strings == [(0, '$a', 'ab')])
+        self.assertTrue(matches[0].strings == [(0, '$a', bytes('ab', 'utf-8'))])
 
     def testCount(self):
 
@@ -813,14 +807,9 @@ class TestYara(unittest.TestCase):
         r = yara.compile(source='rule test { condition: ext_str matches /ssi$/ }', externals={'ext_str': 'mississippi'})
         self.assertFalse(r.match(data='dummy'))
 
-        if sys.version_info[0] >= 3:
-            self.assertTrue(yara.compile(
-                source="rule test { condition: true}",
-                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' }))
-        else:
-            self.assertRaises(UnicodeEncodeError, yara.compile,
-                source="rule test { condition: true}",
-                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' })
+        self.assertTrue(yara.compile(
+            source="rule test { condition: true}",
+            externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' }))
 
     def testCallbackAll(self):
         global rule_data
@@ -888,11 +877,10 @@ class TestYara(unittest.TestCase):
 
         self.assertTrue(len(m) == 2)
 
-        if sys.version_info[0] < 3:
-          self.assertTrue(m[0] < m[1])
-          self.assertTrue(m[0] != m[1])
-          self.assertFalse(m[0] > m[1])
-          self.assertFalse(m[0] == m[1])
+        self.assertTrue(m[0] < m[1])
+        self.assertTrue(m[0] != m[1])
+        self.assertFalse(m[0] > m[1])
+        self.assertFalse(m[0] == m[1])
 
     def testComments(self):
 
@@ -979,12 +967,8 @@ class TestYara(unittest.TestCase):
 
         r1.match(data='', modules_callback=callback)
 
-        if sys.version_info[0] >= 3:
-          self.assertTrue(data['constants']['foo'] == bytes('foo', 'utf-8'))
-          self.assertTrue(data['constants']['empty'] == bytes('', 'utf-8'))
-        else:
-          self.assertTrue(data['constants']['foo'] == 'foo')
-          self.assertTrue(data['constants']['empty'] == '')
+        self.assertTrue(data['constants']['foo'] == bytes('foo', 'utf-8'))
+        self.assertTrue(data['constants']['empty'] == bytes('', 'utf-8'))
 
         self.assertTrue(data['constants']['one'] == 1)
         self.assertTrue(data['constants']['two'] == 2)
