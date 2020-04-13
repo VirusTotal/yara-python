@@ -695,7 +695,7 @@ class TestYara(unittest.TestCase):
     def testMeta(self):
 
         r = yara.compile(source=r'rule test { meta: a = "\x80" condition: true }')
-        self.assertTrue(list(r)[0].meta['a'] == b'\x80')
+        self.assertTrue(list(r)[0].meta['a'] == '' or list(r)[0].meta['a'] == r'\x80')
 
     # This test is similar to testMeta but it tests the meta data generated
     # when a Match object is created.
@@ -703,7 +703,7 @@ class TestYara(unittest.TestCase):
 
         r = yara.compile(source=r'rule test { meta: a = "\x80" condition: true }')
         m = r.match(data='dummy')
-        self.assertTrue(list(m)[0].meta['a'] == b'\x80')
+        self.assertTrue(list(m)[0].meta['a'] == '' or list(r)[0].meta['a'] == r'\x80')
 
     def testFilesize(self):
 

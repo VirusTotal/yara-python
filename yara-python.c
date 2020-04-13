@@ -46,7 +46,7 @@ typedef long Py_hash_t;
 #endif
 
 #if PY_MAJOR_VERSION >= 3
-#define PY_STRING(x) PyUnicode_FromString(x)
+#define PY_STRING(x) PyUnicode_DecodeUTF8(x, strlen(x), "ignore" )
 #define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
 #define PY_STRING_CHECK(x) PyUnicode_Check(x)
 #else
@@ -717,22 +717,10 @@ int yara_callback(
     else if (meta->type == META_TYPE_BOOLEAN)
       object = PyBool_FromLong((long) meta->integer);
     else
-    {
       object = PY_STRING(meta->string);
-      if (object == NULL)
-      {
-        // The PY_STRING() call failed, likely because the metadata value is not
-        // valid unicode, so let's clear the error and treat it as bytes.
-        PyErr_Clear();
-        object = PyBytes_FromString(meta->string);
-      }
-    }
 
-    if (object != NULL)
-    {
-      PyDict_SetItemString(meta_list, meta->identifier, object);
-      Py_DECREF(object);
-    }
+    PyDict_SetItemString(meta_list, meta->identifier, object);
+    Py_DECREF(object);
   }
 
   yr_rule_strings_foreach(rule, string)
@@ -1332,17 +1320,10 @@ static PyObject* Rules_next(
       else if (meta->type == META_TYPE_BOOLEAN)
         object = PyBool_FromLong((long) meta->integer);
       else
-      {
         object = PY_STRING(meta->string);
-        if (object == NULL)
-          object = PyBytes_FromString(meta->string);
-      }
 
-      if (object != NULL)
-      {
-        PyDict_SetItemString(meta_list, meta->identifier, object);
-        Py_DECREF(object);
-      }
+      PyDict_SetItemString(meta_list, meta->identifier, object);
+      Py_DECREF(object);
     }
 
     rule->identifier = PY_STRING(rules->iter_current_rule->identifier);
