@@ -140,8 +140,8 @@ RE_TESTS = [
   ('a[0-9]*b', 'a0123456789b', SUCCEED, 'a0123456789b'),
   ('[0-9a-f]+', '0123456789abcdef', SUCCEED, '0123456789abcdef'),
   ('[0-9a-f]+', 'xyz0123456789xyz', SUCCEED, '0123456789'),
-  ('a[\s\S]b', 'a b', SUCCEED, 'a b'),
-  ('a[\d\D]b', 'a1b', SUCCEED, 'a1b'),
+  (r'a[\s\S]b', 'a b', SUCCEED, 'a b'),
+  (r'a[\d\D]b', 'a1b', SUCCEED, 'a1b'),
   ('[x-z]+', 'abc', FAIL),
   ('a[-]?c', 'ac', SUCCEED, 'ac'),
   ('a[-b]', 'a-', SUCCEED, 'a-'),
@@ -161,7 +161,7 @@ RE_TESTS = [
   ('a[\\', '', SYNTAX_ERROR),
   ('a]', 'a]', SUCCEED, 'a]'),
   ('a[]]b', 'a]b', SUCCEED, 'a]b'),
-  ('a[\]]b', 'a]b', SUCCEED, 'a]b'),
+  (r'a[\]]b', 'a]b', SUCCEED, 'a]b'),
   ('a[^bc]d', 'aed', SUCCEED, 'aed'),
   ('a[^bc]d', 'abd', FAIL),
   ('a[^-b]c', 'adc', SUCCEED, 'adc'),
@@ -192,16 +192,16 @@ RE_TESTS = [
   (r'[\x5D-\x5F]', '\x5E', SUCCEED, '\x5E'),
   (r'[\x5C-\x5F]', '\x5E', SUCCEED, '\x5E'),
   (r'[\x5D-\x5F]', '\x5E', SUCCEED, '\x5E'),
-  ('a\wc', 'abc', SUCCEED, 'abc'),
-  ('a\wc', 'a_c', SUCCEED, 'a_c'),
-  ('a\wc', 'a0c', SUCCEED, 'a0c'),
-  ('a\wc', 'a*c', FAIL),
-  ('\w+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
-  ('[\w]+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
-  ('\D+', '1234abc5678', SUCCEED, 'abc'),
-  ('[\d]+', '0123456789', SUCCEED, '0123456789'),
-  ('[\D]+', '1234abc5678', SUCCEED, 'abc'),
-  ('[\da-fA-F]+', '123abc', SUCCEED, '123abc'),
+  (r'a\wc', 'abc', SUCCEED, 'abc'),
+  (r'a\wc', 'a_c', SUCCEED, 'a_c'),
+  (r'a\wc', 'a0c', SUCCEED, 'a0c'),
+  (r'a\wc', 'a*c', FAIL),
+  (r'\w+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
+  (r'[\w]+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
+  (r'\D+', '1234abc5678', SUCCEED, 'abc'),
+  (r'[\d]+', '0123456789', SUCCEED, '0123456789'),
+  (r'[\D]+', '1234abc5678', SUCCEED, 'abc'),
+  (r'[\da-fA-F]+', '123abc', SUCCEED, '123abc'),
   ('^(ab|cd)e', 'abcde', FAIL),
   ('(abc|)ef', 'abcdef', SUCCEED, 'ef'),
   ('(abc|)ef', 'abcef', SUCCEED, 'abcef'),
@@ -360,11 +360,11 @@ class TestYara(unittest.TestCase):
     def testArithmeticOperators(self):
 
         self.assertTrueRules([
-            'rule test { condition: (1 + 1) * 2 == (9 - 1) \ 2 }',
+            r'rule test { condition: (1 + 1) * 2 == (9 - 1) \ 2 }',
             'rule test { condition: 5 % 2 == 1 }',
             'rule test { condition: 1.5 + 1.5 == 3}',
-            'rule test { condition: 3 \ 2 == 1}',
-            'rule test { condition: 3.0 \ 2 == 1.5}',
+            r'rule test { condition: 3 \ 2 == 1}',
+            r'rule test { condition: 3.0 \ 2 == 1.5}',
             'rule test { condition: 1 + -1 == 0}',
             'rule test { condition: -1 + -1 == -2}',
             'rule test { condition: 4 --2 * 2 == 8}',
@@ -655,7 +655,7 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = /[M-N]iss/ nocase condition: $a }',
             'rule test { strings: $a = /(Mi|ssi)ssippi/ nocase condition: $a }',
             'rule test { strings: $a = /ppi\tmi/ condition: $a }',
-            'rule test { strings: $a = /ppi\.mi/ condition: $a }',
+            r'rule test { strings: $a = /ppi\.mi/ condition: $a }',
             'rule test { strings: $a = /^mississippi/ fullword condition: $a }',
             'rule test { strings: $a = /mississippi.*mississippi$/s condition: $a }',
         ], 'mississippi\tmississippi.mississippi\nmississippi')
@@ -691,6 +691,25 @@ class TestYara(unittest.TestCase):
         self.assertFalseRules([
             'rule test { condition: entrypoint >= 0 }',
         ])
+
+    def testMeta(self):
+
+        r = yara.compile(source=r'rule test { meta: a = "foo\x80bar" condition: true }')
+        self.assertTrue(list(r)[0].meta['a'] == 'foobar')
+
+    # This test ensures that anything after the NULL character is stripped.
+    def testMetaNull(self):
+
+        r = yara.compile(source=r'rule test { meta: a = "foo\x00bar\x80" condition: true }')
+        self.assertTrue(list(r)[0].meta['a'] == 'foo')
+
+    # This test is similar to testMeta but it tests the meta data generated
+    # when a Match object is created.
+    def testScanMeta(self):
+
+        r = yara.compile(source=r'rule test { meta: a = "foo\x80bar" condition: true }')
+        m = r.match(data='dummy')
+        self.assertTrue(list(m)[0].meta['a'] == 'foobar')
 
     def testFilesize(self):
 
