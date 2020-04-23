@@ -50,7 +50,7 @@ typedef long Py_hash_t;
 #define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
 #define PY_STRING_CHECK(x) PyUnicode_Check(x)
 #else
-#define PY_STRING(x) PyString_FromString(x)
+#define PY_STRING(x) PyString_Decode(x, strlen(x), "utf-8", "ignore")
 #define PY_STRING_TO_C(x) PyString_AsString(x)
 #define PY_STRING_CHECK(x) (PyString_Check(x) || PyUnicode_Check(x))
 #endif
