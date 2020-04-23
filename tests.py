@@ -692,6 +692,25 @@ class TestYara(unittest.TestCase):
             'rule test { condition: entrypoint >= 0 }',
         ])
 
+    def testMeta(self):
+
+        r = yara.compile(source=r'rule test { meta: a = "foo\x80bar" condition: true }')
+        self.assertTrue(list(r)[0].meta['a'] == 'foobar')
+
+    # This test ensures that anything after the NULL character is stripped.
+    def testMetaNull(self):
+
+        r = yara.compile(source=r'rule test { meta: a = "foo\x00bar\x80" condition: true }')
+        self.assertTrue(list(r)[0].meta['a'] == 'foo')
+
+    # This test is similar to testMeta but it tests the meta data generated
+    # when a Match object is created.
+    def testScanMeta(self):
+
+        r = yara.compile(source=r'rule test { meta: a = "foo\x80bar" condition: true }')
+        m = r.match(data='dummy')
+        self.assertTrue(list(m)[0].meta['a'] == 'foobar')
+
     def testFilesize(self):
 
         self.assertTrueRules([
