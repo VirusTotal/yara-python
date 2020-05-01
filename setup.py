@@ -29,6 +29,7 @@ import sys
 import tempfile
 import shutil
 import subprocess
+import sysconfig
 
 
 OPTIONS = [
@@ -313,6 +314,10 @@ class UpdateCommand(Command):
 with open('README.rst', 'r', 'utf-8') as f:
   readme = f.read()
 
+# Common flags for both release and debug builds.
+extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+extra_compile_args += ["-std=c99"]
+
 setup(
     name='yara-python',
     version='4.0.0',
@@ -336,4 +341,5 @@ setup(
     ext_modules=[Extension(
         name='yara',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
-        sources=['yara-python.c'])])
+        sources=['yara-python.c'],
+        extra_compile_args=extra_compile_args)])
