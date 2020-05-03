@@ -692,7 +692,7 @@ int yara_callback(
     else if (meta->type == META_TYPE_BOOLEAN)
       object = PyBool_FromLong((long) meta->integer);
     else
-      object = PyUnicode_FromString(meta->string);
+      object = PyUnicode_DecodeUTF8(meta->string, strlen(meta->string), "ignore");
 
     PyDict_SetItemString(meta_list, meta->identifier, object);
     Py_DECREF(object);
@@ -1281,7 +1281,7 @@ static PyObject* Rules_next(
       else if (meta->type == META_TYPE_BOOLEAN)
         object = PyBool_FromLong((long) meta->integer);
       else
-        object = PyUnicode_FromString(meta->string);
+        object = PyUnicode_DecodeUTF8(meta->string, strlen(meta->string), "ignore");
 
       PyDict_SetItemString(meta_list, meta->identifier, object);
       Py_DECREF(object);
@@ -1291,7 +1291,7 @@ static PyObject* Rules_next(
     rule->private = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_PRIVATE);
     rule->identifier = PyUnicode_DecodeUTF8(
         rules->iter_current_rule->identifier,
-        strlen(rules->iter_current_rule->identifier,
+        strlen(rules->iter_current_rule->identifier),
         "ignore");
     rule->tags = tag_list;
     rule->meta = meta_list;
