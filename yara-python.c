@@ -180,6 +180,8 @@ typedef struct
   PyObject* identifier;
   PyObject* tags;
   PyObject* meta;
+  PyObject* global;
+  PyObject* private;
 } Rule;
 
 static void Rule_dealloc(
@@ -190,6 +192,20 @@ static PyObject* Rule_getattro(
     PyObject* name);
 
 static PyMemberDef Rule_members[] = {
+  {
+    "is_global",
+    T_OBJECT_EX,
+    offsetof(Rule, global),
+    READONLY,
+    "Rule is global"
+  },
+  {
+    "is_private",
+    T_OBJECT_EX,
+    offsetof(Rule, private),
+    READONLY,
+    "Rule is private"
+  },
   {
     "identifier",
     T_OBJECT_EX,
@@ -1183,6 +1199,8 @@ static void Rule_dealloc(
   Py_XDECREF(object->identifier);
   Py_XDECREF(object->tags);
   Py_XDECREF(object->meta);
+  Py_XDECREF(object->global);
+  Py_XDECREF(object->private);
   PyObject_Del(self);
 }
 
@@ -1269,7 +1287,12 @@ static PyObject* Rules_next(
       Py_DECREF(object);
     }
 
-    rule->identifier = PyUnicode_FromString(rules->iter_current_rule->identifier);
+    rule->global = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_GLOBAL);
+    rule->private = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_PRIVATE);
+    rule->identifier = PyUnicode_DecodeUTF8(
+        rules->iter_current_rule->identifier,
+        strlen(rules->iter_current_rule->identifier,
+        "ignore");
     rule->tags = tag_list;
     rule->meta = meta_list;
     rules->iter_current_rule++;
