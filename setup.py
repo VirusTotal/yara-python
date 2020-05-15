@@ -30,7 +30,6 @@ import tempfile
 import shutil
 import subprocess
 
-
 OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
@@ -182,7 +181,9 @@ class BuildExtCommand(build_ext):
     building_for_openbsd = 'openbsd' in self.plat_name # need testing
 
     if building_for_linux:
+      module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_LINUX_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
     elif building_for_windows:
       module.define_macros.append(('USE_WINDOWS_PROC', '1'))
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
@@ -192,26 +193,33 @@ class BuildExtCommand(build_ext):
       module.libraries.append('crypt32')
       module.libraries.append('ws2_32')
     elif building_for_osx:
+      module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_MACH_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
       module.include_dirs.append('/usr/local/opt/openssl/include')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
     elif building_for_freebsd:
+      module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_FREEBSD_PROC', '1'))
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
     elif building_for_openbsd:
+      module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_OPENBSD_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
     else:
+      module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_NO_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
 
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
