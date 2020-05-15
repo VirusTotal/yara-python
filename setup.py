@@ -29,8 +29,6 @@ import sys
 import tempfile
 import shutil
 import subprocess
-import sysconfig
-
 
 OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
