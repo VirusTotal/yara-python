@@ -184,6 +184,7 @@ class BuildExtCommand(build_ext):
 
     if building_for_linux:
       module.define_macros.append(('USE_LINUX_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
     elif building_for_windows:
       module.define_macros.append(('USE_WINDOWS_PROC', '1'))
       module.define_macros.append(('_CRT_SECURE_NO_WARNINGS', '1'))
@@ -194,6 +195,7 @@ class BuildExtCommand(build_ext):
       module.libraries.append('ws2_32')
     elif building_for_osx:
       module.define_macros.append(('USE_MACH_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
       module.include_dirs.append('/usr/local/opt/openssl/include')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
@@ -201,18 +203,21 @@ class BuildExtCommand(build_ext):
       module.library_dirs.append('/usr/local/lib')
     elif building_for_freebsd:
       module.define_macros.append(('USE_FREEBSD_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
     elif building_for_openbsd:
       module.define_macros.append(('USE_OPENBSD_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
       module.include_dirs.append('/opt/local/include')
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
     else:
       module.define_macros.append(('USE_NO_PROC', '1'))
+      module.extra_compile_args.append('-std=c99')
 
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
@@ -314,10 +319,6 @@ class UpdateCommand(Command):
 with open('README.rst', 'r', 'utf-8') as f:
   readme = f.read()
 
-# Common flags for both release and debug builds.
-extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
-extra_compile_args += ["-std=c99"]
-
 setup(
     name='yara-python',
     version='4.0.0',
@@ -341,5 +342,4 @@ setup(
     ext_modules=[Extension(
         name='yara',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
-        sources=['yara-python.c'],
-        extra_compile_args=extra_compile_args)])
+        sources=['yara-python.c'])])
