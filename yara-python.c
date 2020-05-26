@@ -1372,13 +1372,13 @@ static PyObject* Rules_match(
       };
 
   char* filepath = NULL;
-  char* data = NULL;
+  Py_buffer data;
 
   int pid = 0;
   int timeout = 0;
-  Py_ssize_t length = 0;
   int error = ERROR_SUCCESS;
   int fast_mode = 0;
+  int has_data = 0;
 
   PyObject* externals = NULL;
   PyObject* fast = NULL;
@@ -1396,12 +1396,11 @@ static PyObject* Rules_match(
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis#OOOiOOi",
+        "|sis*OOOiOOi",
         kwlist,
         &filepath,
         &pid,
         &data,
-        &length,
         &externals,
         &callback_data.callback,
         &fast,
@@ -1410,7 +1409,7 @@ static PyObject* Rules_match(
         &callback_data.modules_callback,
         &callback_data.which))
   {
-    if (filepath == NULL && data == NULL && pid == 0)
+    if (filepath == NULL && data.buf == NULL && pid == 0)
     {
       return PyErr_Format(
           PyExc_TypeError,
@@ -1421,6 +1420,7 @@ static PyObject* Rules_match(
     {
       if (!PyCallable_Check(callback_data.callback))
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'callback' must be callable");
@@ -1431,6 +1431,7 @@ static PyObject* Rules_match(
     {
       if (!PyCallable_Check(callback_data.modules_callback))
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_callback' must be callable");
@@ -1441,6 +1442,7 @@ static PyObject* Rules_match(
     {
       if (!PyDict_Check(callback_data.modules_data))
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_data' must be a dictionary");
@@ -1455,11 +1457,14 @@ static PyObject* Rules_match(
         {
           // Restore original externals provided during compiling.
           process_match_externals(object->externals, object->rules);
+
+          PyBuffer_Release(&data);
           return NULL;
         }
       }
       else
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'externals' must be a dictionary");
@@ -1487,16 +1492,17 @@ static PyObject* Rules_match(
 
       Py_END_ALLOW_THREADS
     }
-    else if (data != NULL)
+    else if (data.buf != NULL)
     {
+      has_data = 1;
       callback_data.matches = PyList_New(0);
 
       Py_BEGIN_ALLOW_THREADS
 
       error = yr_rules_scan_mem(
           object->rules,
-          (unsigned char*) data,
-          (size_t) length,
+          (unsigned char*) data.buf,
+          (size_t) data.len,
           fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
           yara_callback,
           &callback_data,
@@ -1521,6 +1527,8 @@ static PyObject* Rules_match(
       Py_END_ALLOW_THREADS
     }
 
+    PyBuffer_Release(&data);
+
     // Restore original externals provided during compiling.
     if (object->externals != NULL)
     {
@@ -1542,7 +1550,7 @@ static PyObject* Rules_match(
         {
           handle_error(error, filepath);
         }
-        else if (data != NULL)
+        else if (has_data)
         {
           handle_error(error, "<data>");
         }
