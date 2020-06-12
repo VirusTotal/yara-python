@@ -1372,13 +1372,12 @@ static PyObject* Rules_match(
       };
 
   char* filepath = NULL;
-  Py_buffer data;
+  Py_buffer data = {0};
 
   int pid = 0;
   int timeout = 0;
   int error = ERROR_SUCCESS;
   int fast_mode = 0;
-  int has_data = 0;
 
   PyObject* externals = NULL;
   PyObject* fast = NULL;
@@ -1494,7 +1493,6 @@ static PyObject* Rules_match(
     }
     else if (data.buf != NULL)
     {
-      has_data = 1;
       callback_data.matches = PyList_New(0);
 
       Py_BEGIN_ALLOW_THREADS
@@ -1550,13 +1548,13 @@ static PyObject* Rules_match(
         {
           handle_error(error, filepath);
         }
-        else if (has_data)
-        {
-          handle_error(error, "<data>");
-        }
         else if (pid != 0)
         {
           handle_error(error, "<proc>");
+        }
+        else
+        {
+          handle_error(error, "<data>");
         }
 
         #ifdef PROFILING_ENABLED
