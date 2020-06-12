@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2007-2014. The YARA Authors. All Rights Reserved.
 #
@@ -692,24 +694,58 @@ class TestYara(unittest.TestCase):
             'rule test { condition: entrypoint >= 0 }',
         ])
 
-    def testMeta(self):
-
-        r = yara.compile(source=r'rule test { meta: a = "foo\x80bar" condition: true }')
-        self.assertTrue((list(r)[0].meta['a']) == 'foobar')
-
-    # This test ensures that anything after the NULL character is stripped.
+     # This test ensures that anything after the NULL character is stripped.
     def testMetaNull(self):
 
         r = yara.compile(source=r'rule test { meta: a = "foo\x00bar\x80" condition: true }')
         self.assertTrue((list(r)[0].meta['a']) == 'foo')
 
+    def testMeta(self):
+
+        r = yara.compile(source=r"""
+            rule test {
+                meta:
+                    a = "foo\x80bar"
+                    b = "ñ"
+                    c = "\xc3\xb1"
+                condition:
+                    true }
+            """)
+
+        meta = list(r)[0].meta
+
+        if sys.version_info > (3, 0):
+            self.assertTrue(meta['a'] == 'foobar')
+        else:
+            self.assertTrue(meta['a'] == 'foo\x80bar')
+
+        self.assertTrue(meta['b'] == 'ñ')
+        self.assertTrue(meta['c'] == 'ñ')
+
     # This test is similar to testMeta but it tests the meta data generated
     # when a Match object is created.
     def testScanMeta(self):
 
-        r = yara.compile(source=r'rule test { meta: a = "foo\x80bar" condition: true }')
+        r = yara.compile(source=r"""
+            rule test {
+                meta:
+                    a = "foo\x80bar"
+                    b = "ñ"
+                    c = "\xc3\xb1"
+                condition:
+                    true }
+             """)
+
         m = r.match(data='dummy')
-        self.assertTrue((list(m)[0].meta['a']) == 'foobar')
+        meta = list(m)[0].meta
+
+        if sys.version_info > (3, 0):
+            self.assertTrue(meta['a'] == 'foobar')
+        else:
+            self.assertTrue(meta['a'] == 'foo\x80bar')
+
+        self.assertTrue(meta['b'] == 'ñ')
+        self.assertTrue(meta['c'] == 'ñ')
 
     def testFilesize(self):
 
