@@ -33,8 +33,6 @@ import subprocess
 OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
-   ('enable-magic', None, 'enable "magic" module'),
-   ('enable-dotnet', None, 'enable "dotnet" module'),
    ('enable-dex', None, 'enable "dex" module'),
    ('enable-macho', None, 'enable "macho" module'),
    ('enable-profiling', None, 'enable profiling features')]
@@ -43,8 +41,6 @@ OPTIONS = [
 BOOLEAN_OPTIONS = [
     'dynamic-linking',
     'enable-cuckoo',
-    'enable-magic',
-    'enable-dotnet',
     'enable-dex',
     'enable-macho',
     'enable-profiling']
@@ -96,9 +92,7 @@ class BuildCommand(build):
 
     build.initialize_options(self)
     self.dynamic_linking = None
-    self.enable_magic = None
     self.enable_cuckoo = None
-    self.enable_dotnet = None
     self.enable_dex = None
     self.enable_macho = None
     self.enable_profiling = None
@@ -118,9 +112,7 @@ class BuildExtCommand(build_ext):
 
     build_ext.initialize_options(self)
     self.dynamic_linking = None
-    self.enable_magic = None
     self.enable_cuckoo = None
-    self.enable_dotnet = None
     self.enable_dex = None
     self.enable_macho = None
     self.enable_profiling = None
@@ -134,22 +126,14 @@ class BuildExtCommand(build_ext):
 
     self.set_undefined_options('build',
         ('dynamic_linking', 'dynamic_linking'),
-        ('enable_magic', 'enable_magic'),
         ('enable_cuckoo', 'enable_cuckoo'),
-        ('enable_dotnet', 'enable_dotnet'),
         ('enable_dex', 'enable_dex'),
         ('enable_macho', 'enable_macho'),
         ('enable_profiling', 'enable_profiling'))
 
-    if self.enable_magic and self.dynamic_linking:
-      raise distutils.errors.DistutilsOptionError(
-          '--enable-magic can''t be used with --dynamic-linking')
     if self.enable_cuckoo and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-cuckoo can''t be used with --dynamic-linking')
-    if self.enable_dotnet and self.dynamic_linking:
-      raise distutils.errors.DistutilsOptionError(
-          '--enable-dotnet can''t be used with --dynamic-linking')
     if self.enable_dex and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-dex can''t be used with --dynamic-linking')
@@ -243,11 +227,8 @@ class BuildExtCommand(build_ext):
         else:
           exclusions.append('yara/libyara/modules/hash/hash.c')
 
-      if self.enable_magic:
-        module.define_macros.append(('MAGIC_MODULE', '1'))
-        module.libraries.append('magic')
-      else:
-        exclusions.append('yara/libyara/modules/magic/magic.c')
+      module.define_macros.append(('MAGIC_MODULE', '1'))
+      module.libraries.append('magic')
 
       if self.enable_cuckoo:
         module.define_macros.append(('CUCKOO_MODULE', '1'))
@@ -255,10 +236,7 @@ class BuildExtCommand(build_ext):
       else:
         exclusions.append('yara/libyara/modules/cuckoo/cuckoo.c')
 
-      if self.enable_dotnet:
-        module.define_macros.append(('DOTNET_MODULE', '1'))
-      else:
-        exclusions.append('yara/libyara/modules/dotnet/dotnet.c')
+      module.define_macros.append(('DOTNET_MODULE', '1'))
 
       if self.enable_dex:
         module.define_macros.append(('DEX_MODULE', '1'))
