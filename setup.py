@@ -296,18 +296,16 @@ class UpdateCommand(Command):
     subprocess.check_call(['./configure'], cwd='yara')
 
 
-with open('README.rst', 'r', 'utf-8') as f:
+with open('README.md', 'r', 'utf-8') as f:
   readme = f.read()
 
 setup(
-    name='yara-python',
+    name='magic-yara-python',
     version='4.0.2',
-    description='Python interface for YARA',
+    description='Fork of yara-python that enables more modules by default',
     long_description=readme,
     license='Apache 2.0',
-    author='Victor M. Alvarez',
-    author_email='plusvic@gmail.com, vmalvarez@virustotal.com',
-    url='https://github.com/VirusTotal/yara-python',
+    url='https://github.com/ra-kete/magic-yara-python',
     classifiers=[
         'Programming Language :: Python',
         'License :: OSI Approved :: Apache Software License',
