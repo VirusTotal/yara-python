@@ -167,6 +167,7 @@ class BuildExtCommand(build_ext):
     if building_for_linux:
       module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_LINUX_PROC', '1'))
+      module.define_macros.append(('HAVE_STDBOOL_H', '1'))
       module.extra_compile_args.append('-std=c99')
     elif building_for_windows:
       module.define_macros.append(('USE_WINDOWS_PROC', '1'))
