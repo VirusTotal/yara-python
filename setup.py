@@ -302,7 +302,7 @@ with open('README.md', 'r', 'utf-8') as f:
 
 setup(
     name='magic-yara-python',
-    version='4.0.2',
+    version='4.0.2.1',
     description='Fork of yara-python that enables more modules by default',
     long_description=readme,
     license='Apache 2.0',
