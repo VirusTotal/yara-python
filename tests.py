@@ -1086,6 +1086,13 @@ class TestYara(unittest.TestCase):
         self.assertTrue(r[0].is_global == True)
         self.assertTrue(r[1].is_private == True)
 
+    def testMatchMemoryview(self):
+
+        r = yara.compile(source='rule test { strings: $s = "test" condition: $s }')
+        data = memoryview(b"test")
+
+        self.assertTrue(r.match(data=data))
+
 
 if __name__ == "__main__":
     unittest.main()
