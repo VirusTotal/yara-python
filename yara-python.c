@@ -47,12 +47,18 @@ typedef long Py_hash_t;
 
 #if PY_MAJOR_VERSION >= 3
 #define PY_STRING(x) PyUnicode_DecodeUTF8(x, strlen(x), "ignore" )
+#define PY_STRING_FORMAT(...) PyUnicode_FromFormat(__VA_ARGS__)
 #define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
 #define PY_STRING_CHECK(x) PyUnicode_Check(x)
 #else
 #define PY_STRING(x) PyString_FromString(x)
+#define PY_STRING_FORMAT(...) PyString_FromFormat(__VA_ARGS__)
 #define PY_STRING_TO_C(x) PyString_AsString(x)
 #define PY_STRING_CHECK(x) (PyString_Check(x) || PyUnicode_Check(x))
+#endif
+
+#if PY_VERSION_HEX < 0x03020000
+#define PyDescr_NAME(x) (((PyDescrObject*)x)->d_name)
 #endif
 
 /* Module globals */
@@ -1711,50 +1717,26 @@ void raise_exception_on_error(
           line_number,
           message);
   }
-}
-
-
-void raise_exception_on_error_or_warning(
-    int error_level,
-    const char* file_name,
-    int line_number,
-    const YR_RULE* rule,
-    const char* message,
-    void* user_data)
-{
-  if (error_level == YARA_ERROR_LEVEL_ERROR)
-  {
-    if (file_name != NULL)
-      PyErr_Format(
-          YaraSyntaxError,
-          "%s(%d): %s",
-          file_name,
-          line_number,
-          message);
-    else
-      PyErr_Format(
-          YaraSyntaxError,
-          "line %d: %s",
-          line_number,
-          message);
-  }
   else
   {
+    PyObject* warnings = (PyObject*)user_data;
+    PyObject* warning_msg;
     if (file_name != NULL)
-      PyErr_Format(
-          YaraWarningError,
+      warning_msg = PY_STRING_FORMAT(
           "%s(%d): %s",
           file_name,
           line_number,
           message);
     else
-      PyErr_Format(
-          YaraWarningError,
+      warning_msg = PY_STRING_FORMAT(
           "line %d: %s",
           line_number,
           message);
+    PyList_Append(warnings, warning_msg);
+    Py_DECREF(warning_msg);
   }
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1951,6 +1933,8 @@ static PyObject* yara_compile(
   char* filepath = NULL;
   char* source = NULL;
   char* ns = NULL;
+  PyObject* warnings = PyList_New(0);
+  bool warning_error = false;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
@@ -1973,7 +1957,7 @@ static PyObject* yara_compile(
     if (error != ERROR_SUCCESS)
       return handle_error(error, NULL);
 
-    yr_compiler_set_callback(compiler, raise_exception_on_error, NULL);
+    yr_compiler_set_callback(compiler, raise_exception_on_error, warnings);
 
     if (error_on_warning != NULL)
     {
@@ -1981,10 +1965,7 @@ static PyObject* yara_compile(
       {
         if (PyObject_IsTrue(error_on_warning) == 1)
         {
-          yr_compiler_set_callback(
-              compiler,
-              raise_exception_on_error_or_warning,
-              NULL);
+          warning_error = true;
         }
       }
       else
@@ -2169,6 +2150,13 @@ static PyObject* yara_compile(
           PyExc_TypeError,
           "compile() takes 1 argument");
     }
+
+    if (warning_error & PyList_Size(warnings) > 0)
+    {
+      PyErr_SetObject(YaraWarningError, warnings);
+    }
+
+    Py_DECREF(warnings);
 
     if (PyErr_Occurred() == NULL)
     {
@@ -2371,6 +2359,24 @@ static PyMethodDef yara_methods[] = {
       ob = Py_InitModule3(name, methods, doc);
 #endif
 
+static PyObject* YaraWarningError_getwarnings(PyObject *self, void* closure)
+{
+  PyObject *args = PyObject_GetAttrString(self, "args");
+  if (!args) {
+    return NULL;
+  }
+
+  PyObject* ret = PyTuple_GetItem(args, 0);
+  Py_XINCREF(ret);
+  Py_XDECREF(args);
+  return ret;
+}
+
+static PyGetSetDef YaraWarningError_getsetters[] = {
+  {"warnings", YaraWarningError_getwarnings, NULL, NULL, NULL},
+  {NULL}
+};
+
 
 MOD_INIT(yara)
 {
@@ -2397,6 +2403,14 @@ MOD_INIT(yara)
   YaraSyntaxError = PyErr_NewException("yara.SyntaxError", YaraError, NULL);
   YaraTimeoutError = PyErr_NewException("yara.TimeoutError", YaraError, NULL);
   YaraWarningError = PyErr_NewException("yara.WarningError", YaraError, NULL);
+
+  PyTypeObject *YaraWarningError_type = (PyTypeObject *)YaraWarningError;
+  PyObject* descr = PyDescr_NewGetSet(YaraWarningError_type, YaraWarningError_getsetters);
+  if (PyDict_SetItem(YaraWarningError_type->tp_dict, PyDescr_NAME(descr), descr) < 0) {
+    Py_DECREF(m);
+    Py_DECREF(descr);
+  }
+  Py_DECREF(descr);
 #else
   YaraError = Py_BuildValue("s", "yara.Error");
   YaraSyntaxError = Py_BuildValue("s", "yara.SyntaxError");
