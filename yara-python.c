@@ -611,6 +611,7 @@ int yara_callback(
   PyObject* module_data;
   PyObject* callback_result;
   PyObject* module_info_dict;
+
   int which = ((CALLBACK_DATA*) user_data)->which;
 
   Py_ssize_t data_size;
@@ -2151,7 +2152,7 @@ static PyObject* yara_compile(
           "compile() takes 1 argument");
     }
 
-    if (warning_error & PyList_Size(warnings) > 0)
+    if (warning_error && PyList_Size(warnings) > 0)
     {
       PyErr_SetObject(YaraWarningError, warnings);
     }
@@ -2404,12 +2405,15 @@ MOD_INIT(yara)
   YaraTimeoutError = PyErr_NewException("yara.TimeoutError", YaraError, NULL);
   YaraWarningError = PyErr_NewException("yara.WarningError", YaraError, NULL);
 
-  PyTypeObject *YaraWarningError_type = (PyTypeObject *)YaraWarningError;
+  PyTypeObject *YaraWarningError_type = (PyTypeObject *) YaraWarningError;
   PyObject* descr = PyDescr_NewGetSet(YaraWarningError_type, YaraWarningError_getsetters);
-  if (PyDict_SetItem(YaraWarningError_type->tp_dict, PyDescr_NAME(descr), descr) < 0) {
+
+  if (PyDict_SetItem(YaraWarningError_type->tp_dict, PyDescr_NAME(descr), descr) < 0)
+  {
     Py_DECREF(m);
     Py_DECREF(descr);
   }
+
   Py_DECREF(descr);
 #else
   YaraError = Py_BuildValue("s", "yara.Error");
