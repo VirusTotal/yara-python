@@ -1106,7 +1106,7 @@ class TestYara(unittest.TestCase):
         data = memoryview(b"X" * 1000099)
         r.match(data=data, warning_callback=warning_callback)
 
-        self.assertTrue(warning_callback_called, yara.WARNING_TOO_MANY_MATCHES)
+        self.assertTrue(warning_callback_called, yara.CALLBACK_TOO_MANY_MATCHES)
 
 if __name__ == "__main__":
     unittest.main()

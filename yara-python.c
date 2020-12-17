@@ -712,7 +712,7 @@ int yara_callback(
     return result;
   }
 
-  if (message == CALLBACK_MSG_SCAN_WARNING_MATCH_LIMIT)
+  if (message == CALLBACK_MSG_TOO_MANY_MATCHES)
   {
     gil_state = PyGILState_Ensure();
 
@@ -745,7 +745,7 @@ int yara_callback(
         return CALLBACK_ERROR;
       }
 
-      warning_type = PyLong_FromLong(CALLBACK_MSG_SCAN_WARNING_MATCH_LIMIT);
+      warning_type = PyLong_FromLong(CALLBACK_MSG_TOO_MANY_MATCHES);
       if (warning_type == NULL)
       {
         Py_DECREF(identifier);
@@ -2489,7 +2489,7 @@ MOD_INIT(yara)
   PyModule_AddIntConstant(m, "CALLBACK_MATCHES", CALLBACK_MATCHES);
   PyModule_AddIntConstant(m, "CALLBACK_NON_MATCHES", CALLBACK_NON_MATCHES);
   PyModule_AddIntConstant(m, "CALLBACK_ALL", CALLBACK_ALL);
-  PyModule_AddIntConstant(m, "WARNING_TOO_MANY_MATCHES", CALLBACK_MSG_SCAN_WARNING_MATCH_LIMIT);
+  PyModule_AddIntConstant(m, "CALLBACK_TOO_MANY_MATCHES", CALLBACK_MSG_TOO_MANY_MATCHES);
   PyModule_AddStringConstant(m, "__version__", YR_VERSION);
   PyModule_AddStringConstant(m, "YARA_VERSION", YR_VERSION);
   PyModule_AddIntConstant(m, "YARA_VERSION_HEX", YR_VERSION_HEX);
