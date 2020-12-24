@@ -1320,7 +1320,7 @@ static PyObject* Rules_next(
 
   if (RULE_IS_NULL(rules->iter_current_rule))
   {
-    rules->iter_current_rule = rules->rules->rules_list_head;
+    rules->iter_current_rule = rules->rules->rules_table;
     PyErr_SetNone(PyExc_StopIteration);
     return NULL;
   }
@@ -2172,7 +2172,7 @@ static PyObject* yara_compile(
         if (error == ERROR_SUCCESS)
         {
           rules->rules = yara_rules;
-          rules->iter_current_rule = rules->rules->rules_list_head;
+          rules->iter_current_rule = rules->rules->rules_table;
 
           if (externals != NULL && externals != Py_None)
             rules->externals = PyDict_Copy(externals);
@@ -2273,8 +2273,8 @@ static PyObject* yara_load(
       "load() expects either a file path or a file-like object");
   }
 
-  external = rules->rules->externals_list_head;
-  rules->iter_current_rule = rules->rules->rules_list_head;
+  external = rules->rules->ext_vars_table;
+  rules->iter_current_rule = rules->rules->rules_table;
 
   if (!EXTERNAL_VARIABLE_IS_NULL(external))
     rules->externals = PyDict_New();
