@@ -4,7 +4,7 @@ environment:
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
     # See: http://stackoverflow.com/a/13751649/163740
     CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
-    JANSSON_VERSION: "2.10"
+    JANSSON_VERSION: "2.13"
 
   matrix:
 
@@ -61,16 +61,16 @@ environment:
       VS: "Visual Studio 14 2015 Win64"
 
     - PYTHON: "C:\\Python39"
-      PYTHON_VERSION: "3.9.x"
+      PYTHON_VERSION: "3.9.0"
       PYTHON_ARCH: "32"
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
-      VS: "Visual Studio 14 2015"
+      VS: "Visual Studio 15 2017"
 
     - PYTHON: "C:\\Python39-x64"
-      PYTHON_VERSION: "3.9.x"
+      PYTHON_VERSION: "3.9.0"
       PYTHON_ARCH: "64"
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
-      VS: "Visual Studio 14 2015 Win64"
+      VS: "Visual Studio 15 2017 Win64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
