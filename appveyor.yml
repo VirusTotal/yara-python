@@ -70,7 +70,7 @@ environment:
       PYTHON_VERSION: "3.9.0"
       PYTHON_ARCH: "64"
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
-      VS: "Visual Studio 14 2015"
+      VS: "Visual Studio 14 2015 Win64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
