@@ -109,10 +109,8 @@ install:
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture.
 
-  # wheel version 0.29.0 is enforced because version 0.30.0 doesn't support
-  # Python 2.6 anymore. Once we drop support for Python 2.6 we can use the
-  # latest version of wheel.
-  - "%CMD_IN_ENV% pip install wheel==0.29.0"
+  # Install wheel.
+  - "%CMD_IN_ENV% pip install wheel"
 
   # We are in projects/yara-python, lets go out to projects.
   - cd ..
