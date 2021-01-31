@@ -240,6 +240,9 @@ class BuildExtCommand(build_ext):
           module.define_macros.append(('HASH_MODULE', '1'))
           module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
           module.libraries.append('crypto')
+        elif building_for_windows:
+          module.define_macros.append(('HASH_MODULE', '1'))
+          module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
         else:
           exclusions.append('yara/libyara/modules/hash/hash.c')
 
