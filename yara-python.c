@@ -416,6 +416,7 @@ typedef struct _CALLBACK_DATA
   PyObject* callback;
   PyObject* modules_data;
   PyObject* modules_callback;
+  PyObject* warning_callback;
   int which;
 
 } CALLBACK_DATA;
@@ -608,9 +609,12 @@ int yara_callback(
   PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
   PyObject* modules_data = ((CALLBACK_DATA*) user_data)->modules_data;
   PyObject* modules_callback = ((CALLBACK_DATA*) user_data)->modules_callback;
+  PyObject* warning_callback = ((CALLBACK_DATA*) user_data)->warning_callback;
   PyObject* module_data;
   PyObject* callback_result;
   PyObject* module_info_dict;
+  PyObject* identifier;
+  PyObject* warning_type;
 
   int which = ((CALLBACK_DATA*) user_data)->which;
 
@@ -707,6 +711,83 @@ int yara_callback(
 
     return result;
   }
+
+  if (message == CALLBACK_MSG_TOO_MANY_MATCHES)
+  {
+    gil_state = PyGILState_Ensure();
+
+    if (warning_callback == NULL)
+    {
+      // If the user doesn't provide a callback we will print a warning.
+      // NOTE: PyErr_WarnFormat is new in python 3.2. I can go with something
+      // more portable if desired.
+      result = PyErr_WarnFormat(
+          PyExc_RuntimeWarning,
+          1,
+          "maximum matches for string %s. Results may be invalid.",
+          ((YR_STRING*) message_data)->identifier);
+
+      if (result == -1)
+        result = CALLBACK_ERROR;
+      else
+        result = CALLBACK_CONTINUE;
+
+      PyGILState_Release(gil_state);
+      return result;
+    }
+    else
+    {
+      identifier = PyBytes_FromString(((YR_STRING*) message_data)->identifier);
+
+      if (identifier == NULL)
+      {
+        PyGILState_Release(gil_state);
+        return CALLBACK_ERROR;
+      }
+
+      warning_type = PyLong_FromLong(CALLBACK_MSG_TOO_MANY_MATCHES);
+      if (warning_type == NULL)
+      {
+        Py_DECREF(identifier);
+        PyGILState_Release(gil_state);
+        return CALLBACK_ERROR;
+      }
+
+      Py_INCREF(warning_callback);
+
+      callback_result = PyObject_CallFunctionObjArgs(
+          warning_callback,
+          warning_type,
+          identifier,
+          NULL);
+
+      if (callback_result != NULL)
+      {
+        #if PY_MAJOR_VERSION >= 3
+        if (PyLong_Check(callback_result))
+        #else
+        if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
+        #endif
+        {
+          result = (int) PyLong_AsLong(callback_result);
+        }
+
+        Py_DECREF(callback_result);
+      }
+      else
+      {
+        result = CALLBACK_ERROR;
+      }
+
+      Py_DECREF(identifier);
+      Py_DECREF(warning_type);
+      Py_DECREF(warning_callback);
+
+      PyGILState_Release(gil_state);
+      return CALLBACK_CONTINUE;
+    }
+  }
+
 
   rule = (YR_RULE*) message_data;
 
@@ -1375,7 +1456,7 @@ static PyObject* Rules_match(
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
-      "modules_callback", "which_callbacks", NULL
+      "modules_callback", "which_callbacks", "warning_callback", NULL
       };
 
   char* filepath = NULL;
@@ -1397,12 +1478,13 @@ static PyObject* Rules_match(
   callback_data.callback = NULL;
   callback_data.modules_data = NULL;
   callback_data.modules_callback = NULL;
+  callback_data.warning_callback = NULL;
   callback_data.which = CALLBACK_ALL;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis*OOOiOOi",
+        "|sis*OOOiOOiO",
         kwlist,
         &filepath,
         &pid,
@@ -1413,7 +1495,8 @@ static PyObject* Rules_match(
         &timeout,
         &callback_data.modules_data,
         &callback_data.modules_callback,
-        &callback_data.which))
+        &callback_data.which,
+        &callback_data.warning_callback))
   {
     if (filepath == NULL && data.buf == NULL && pid == 0)
     {
@@ -1441,6 +1524,17 @@ static PyObject* Rules_match(
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_callback' must be callable");
+      }
+    }
+
+    if (callback_data.warning_callback != NULL)
+    {
+      if (!PyCallable_Check(callback_data.warning_callback))
+      {
+        PyBuffer_Release(&data);
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'warning_callback' must be callable");
       }
     }
 
@@ -2395,6 +2489,7 @@ MOD_INIT(yara)
   PyModule_AddIntConstant(m, "CALLBACK_MATCHES", CALLBACK_MATCHES);
   PyModule_AddIntConstant(m, "CALLBACK_NON_MATCHES", CALLBACK_NON_MATCHES);
   PyModule_AddIntConstant(m, "CALLBACK_ALL", CALLBACK_ALL);
+  PyModule_AddIntConstant(m, "CALLBACK_TOO_MANY_MATCHES", CALLBACK_MSG_TOO_MANY_MATCHES);
   PyModule_AddStringConstant(m, "__version__", YR_VERSION);
   PyModule_AddStringConstant(m, "YARA_VERSION", YR_VERSION);
   PyModule_AddIntConstant(m, "YARA_VERSION_HEX", YR_VERSION_HEX);
