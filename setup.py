@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
+from setuptools import setup, Command, Extension
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
-from setuptools import setup, Command, Extension
 from codecs import open
 
 import distutils.errors
@@ -85,6 +85,23 @@ def has_function(function_name, libraries=None):
   if os.path.exists('a.out'):
     os.remove('a.out')
   return result
+
+
+def has_header(header_name):
+  compiler = distutils.ccompiler.new_compiler()
+  with muted(sys.stdout, sys.stderr):
+    with tempfile.NamedTemporaryFile(mode='w', prefix=header_name, delete=False, suffix='.c') as f:
+      f.write("""
+#include <{}>
+
+int main() {{ return 0; }}
+      """.format(header_name))
+      f.close()
+      try:
+        compiler.compile([f.name])
+      except distutils.errors.CompileError:
+        return False
+  return True
 
 
 class BuildCommand(build):
@@ -221,6 +238,9 @@ class BuildExtCommand(build_ext):
       module.define_macros.append(('USE_NO_PROC', '1'))
       module.extra_compile_args.append('-std=c99')
 
+    if has_header('stdbool.h'):
+      module.define_macros.append(('HAVE_STDBOOL_H', '1'))
+
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
     if has_function('strlcpy'):
@@ -240,6 +260,9 @@ class BuildExtCommand(build_ext):
           module.define_macros.append(('HASH_MODULE', '1'))
           module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
           module.libraries.append('crypto')
+        elif building_for_windows:
+          module.define_macros.append(('HASH_MODULE', '1'))
+          module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
         else:
           exclusions.append('yara/libyara/modules/hash/hash.c')
 
