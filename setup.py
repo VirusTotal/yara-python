@@ -76,12 +76,15 @@ def muted(*streams):
     devnull.close()
 
 
-def has_function(function_name, libraries=None):
+def has_function(function_name, include_dirs=None, libraries=None, library_dirs=None):
   """Checks if a given functions exists in the current platform."""
   compiler = distutils.ccompiler.new_compiler()
   with muted(sys.stdout, sys.stderr):
-    result = compiler.has_function(
-        function_name, libraries=libraries)
+      result = compiler.has_function(
+          function_name,
+          include_dirs=include_dirs,
+          libraries=libraries,
+          library_dirs=library_dirs)
   if os.path.exists('a.out'):
     os.remove('a.out')
   return result
@@ -218,6 +221,7 @@ class BuildExtCommand(build_ext):
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
+      module.library_dirs.append('/usr/local/opt/openssl/lib')
     elif building_for_freebsd:
       module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_FREEBSD_PROC', '1'))
@@ -255,8 +259,8 @@ class BuildExtCommand(build_ext):
       module.libraries.append('yara')
     else:
       if not self.define or not ('HASH_MODULE', '1') in self.define:
-        if (has_function('MD5_Init', libraries=['crypto']) and
-            has_function('SHA256_Init', libraries=['crypto'])):
+        if (has_function('MD5_Init', include_dirs=module.include_dirs, libraries=['crypto'], library_dirs=module.library_dirs) and
+            has_function('SHA256_Init', include_dirs=module.include_dirs, libraries=['crypto'], library_dirs=module.library_dirs)):
           module.define_macros.append(('HASH_MODULE', '1'))
           module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
           module.libraries.append('crypto')
