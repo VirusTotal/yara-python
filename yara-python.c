@@ -807,46 +807,64 @@ int yara_callback(
     return CALLBACK_ERROR;
   }
 
-  yr_rule_tags_foreach(rule, tag)
+  bool runblock_match = false;
+  if (message == CALLBACK_MSG_RULE_MATCHING)
   {
-    object = PY_STRING(tag);
-    PyList_Append(tag_list, object);
-    Py_DECREF(object);
+    runblock_match = true;
   }
 
-  yr_rule_metas_foreach(rule, meta)
+  bool runblock_callback = false;
+  if (callback != NULL &&
+      ((message == CALLBACK_MSG_RULE_MATCHING && (which & CALLBACK_MATCHES)) ||
+       (message == CALLBACK_MSG_RULE_NOT_MATCHING && (which & CALLBACK_NON_MATCHES))))
   {
-    if (meta->type == META_TYPE_INTEGER)
-      object = Py_BuildValue("i", meta->integer);
-    else if (meta->type == META_TYPE_BOOLEAN)
-      object = PyBool_FromLong((long) meta->integer);
-    else
-      object = PY_STRING(meta->string);
-
-    PyDict_SetItemString(meta_list, meta->identifier, object);
-    Py_DECREF(object);
+    runblock_callback = true;
   }
 
-  yr_rule_strings_foreach(rule, string)
+  // only run expensive foreach blocks if the blocks afterwards are needed
+  if ( runblock_match || runblock_callback )
   {
-    yr_string_matches_foreach(context, string, m)
+    yr_rule_tags_foreach(rule, tag)
     {
-      object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
-
-      tuple = Py_BuildValue(
-          "(L,s,O)",
-          m->base + m->offset,
-          string->identifier,
-          object);
-
-      PyList_Append(string_list, tuple);
-
+      object = PY_STRING(tag);
+      PyList_Append(tag_list, object);
       Py_DECREF(object);
-      Py_DECREF(tuple);
+    }
+  
+    yr_rule_metas_foreach(rule, meta)
+    {
+      if (meta->type == META_TYPE_INTEGER)
+        object = Py_BuildValue("i", meta->integer);
+      else if (meta->type == META_TYPE_BOOLEAN)
+        object = PyBool_FromLong((long) meta->integer);
+      else
+        object = PY_STRING(meta->string);
+  
+      PyDict_SetItemString(meta_list, meta->identifier, object);
+      Py_DECREF(object);
+    }
+  
+    yr_rule_strings_foreach(rule, string)
+    {
+      yr_string_matches_foreach(context, string, m)
+      {
+        object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
+  
+        tuple = Py_BuildValue(
+            "(L,s,O)",
+            m->base + m->offset,
+            string->identifier,
+            object);
+  
+        PyList_Append(string_list, tuple);
+  
+        Py_DECREF(object);
+        Py_DECREF(tuple);
+      }
     }
   }
 
-  if (message == CALLBACK_MSG_RULE_MATCHING)
+  if (runblock_match)
   {
     match = Match_NEW(
         rule->identifier,
@@ -871,9 +889,7 @@ int yara_callback(
     }
   }
 
-  if (callback != NULL &&
-      ((message == CALLBACK_MSG_RULE_MATCHING && (which & CALLBACK_MATCHES)) ||
-       (message == CALLBACK_MSG_RULE_NOT_MATCHING && (which & CALLBACK_NON_MATCHES))))
+  if (runblock_callback)
   {
     Py_INCREF(callback);
 

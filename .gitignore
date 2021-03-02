@@ -1,0 +1,6 @@
+
+yara_python.egg-info/
+tmp/
+build/
+dist/
+*.swp
