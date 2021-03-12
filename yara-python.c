@@ -519,8 +519,6 @@ PyObject* convert_structure_to_python(
 PyObject* convert_array_to_python(
     YR_OBJECT_ARRAY* array)
 {
-  int i;
-
   PyObject* py_object;
   PyObject* py_list = PyList_New(0);
 
@@ -531,7 +529,7 @@ PyObject* convert_array_to_python(
   if (array->items == NULL)
     return py_list;
 
-  for (i = 0; i < array->items->length; i++)
+  for (int i = 0; i < array->items->length; i++)
   {
     py_object = convert_object_to_python(array->items->objects[i]);
 
@@ -549,8 +547,6 @@ PyObject* convert_array_to_python(
 PyObject* convert_dictionary_to_python(
     YR_OBJECT_DICTIONARY* dictionary)
 {
-  int i;
-
   PyObject* py_object;
   PyObject* py_dict = PyDict_New();
 
@@ -561,7 +557,7 @@ PyObject* convert_dictionary_to_python(
   if (dictionary->items == NULL)
     return py_dict;
 
-  for (i = 0; i < dictionary->items->used; i++)
+  for (int i = 0; i < dictionary->items->used; i++)
   {
     py_object = convert_object_to_python(dictionary->items->objects[i].obj);
 
@@ -580,117 +576,155 @@ PyObject* convert_dictionary_to_python(
 }
 
 
-#define CALLBACK_MATCHES 0x01
-#define CALLBACK_NON_MATCHES 0x02
-#define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
-
-int yara_callback(
-    YR_SCAN_CONTEXT* context,
-    int message,
-    void* message_data,
-    void* user_data)
+static int handle_import_module(
+    YR_MODULE_IMPORT* module_import,
+    CALLBACK_DATA* data)
 {
-  YR_STRING* string;
-  YR_MATCH* m;
-  YR_META* meta;
-  YR_RULE* rule;
-  YR_MODULE_IMPORT* module_import;
-
-  const char* tag;
-
-  PyObject* tag_list = NULL;
-  PyObject* string_list = NULL;
-  PyObject* meta_list = NULL;
-  PyObject* match;
-  PyObject* callback_dict;
-  PyObject* object;
-  PyObject* tuple;
-  PyObject* matches = ((CALLBACK_DATA*) user_data)->matches;
-  PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
-  PyObject* modules_data = ((CALLBACK_DATA*) user_data)->modules_data;
-  PyObject* modules_callback = ((CALLBACK_DATA*) user_data)->modules_callback;
-  PyObject* warning_callback = ((CALLBACK_DATA*) user_data)->warning_callback;
-  PyObject* module_data;
-  PyObject* callback_result;
-  PyObject* module_info_dict;
-  PyObject* identifier;
-  PyObject* warning_type;
-
-  int which = ((CALLBACK_DATA*) user_data)->which;
-
-  Py_ssize_t data_size;
-  PyGILState_STATE gil_state;
-
-  int result = CALLBACK_CONTINUE;
-
-  // If the rule doesn't match and the user has not specified that they want to
-  // see non-matches then nothing to do here.
-  if (message == CALLBACK_MSG_RULE_NOT_MATCHING && callback != NULL &&
-      (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
+  if (data->modules_data == NULL)
     return CALLBACK_CONTINUE;
 
-  if (message == CALLBACK_MSG_SCAN_FINISHED)
-    return CALLBACK_CONTINUE;
+  PyGILState_STATE gil_state = PyGILState_Ensure();
 
-  if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
-    return CALLBACK_CONTINUE;
+  PyObject* module_data = PyDict_GetItemString(
+      data->modules_data,
+      module_import->module_name);
 
-  if (message == CALLBACK_MSG_MODULE_IMPORTED && modules_callback == NULL)
-    return CALLBACK_CONTINUE;
-
-  if (message == CALLBACK_MSG_IMPORT_MODULE)
+  #if PY_MAJOR_VERSION >= 3
+  if (module_data != NULL && PyBytes_Check(module_data))
+  #else
+  if (module_data != NULL && PyString_Check(module_data))
+  #endif
   {
-    gil_state = PyGILState_Ensure();
-    module_import = (YR_MODULE_IMPORT*) message_data;
-
-    module_data = PyDict_GetItemString(
-        modules_data,
-        module_import->module_name);
+    Py_ssize_t data_size;
 
     #if PY_MAJOR_VERSION >= 3
-    if (module_data != NULL && PyBytes_Check(module_data))
+    PyBytes_AsStringAndSize(
+        module_data,
+        (char**) &module_import->module_data,
+        &data_size);
     #else
-    if (module_data != NULL && PyString_Check(module_data))
+    PyString_AsStringAndSize(
+        module_data,
+        (char**) &module_import->module_data,
+        &data_size);
     #endif
-    {
-      #if PY_MAJOR_VERSION >= 3
-      PyBytes_AsStringAndSize(
-          module_data,
-          (char**) &module_import->module_data,
-          &data_size);
-      #else
-      PyString_AsStringAndSize(
-          module_data,
-          (char**) &module_import->module_data,
-          &data_size);
-      #endif
 
-      module_import->module_data_size = data_size;
-    }
+    module_import->module_data_size = data_size;
+  }
 
+  PyGILState_Release(gil_state);
+
+  return CALLBACK_CONTINUE;
+}
+
+
+static int handle_module_imported(
+    void* message_data,
+    CALLBACK_DATA* data)
+{
+  if (data->modules_callback == NULL)
+    return CALLBACK_CONTINUE;
+
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
+  PyObject* module_info_dict = convert_structure_to_python(
+      object_as_structure(message_data));
+
+  if (module_info_dict == NULL)
+  {
     PyGILState_Release(gil_state);
     return CALLBACK_CONTINUE;
   }
 
-  if (message == CALLBACK_MSG_MODULE_IMPORTED)
+  PyObject* object = PY_STRING(object_as_structure(message_data)->identifier);
+  PyDict_SetItemString(module_info_dict, "module", object);
+  Py_DECREF(object);
+
+  Py_INCREF(data->modules_callback);
+
+  PyObject* callback_result = PyObject_CallFunctionObjArgs(
+      data->modules_callback,
+      module_info_dict,
+      NULL);
+
+  int result = CALLBACK_CONTINUE;
+
+  if (callback_result != NULL)
   {
-    gil_state = PyGILState_Ensure();
+    #if PY_MAJOR_VERSION >= 3
+    if (PyLong_Check(callback_result))
+    #else
+    if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
+    #endif
+    {
+      result = (int) PyLong_AsLong(callback_result);
+    }
+  }
+  else
+  {
+    result = CALLBACK_ERROR;
+  }
 
-    module_info_dict = convert_structure_to_python(
-        object_as_structure(message_data));
+  Py_XDECREF(callback_result);
+  Py_DECREF(module_info_dict);
+  Py_DECREF(data->modules_callback);
 
-    if (module_info_dict == NULL)
-      return CALLBACK_CONTINUE;
+  PyGILState_Release(gil_state);
 
-    object = PY_STRING(object_as_structure(message_data)->identifier);
-    PyDict_SetItemString(module_info_dict, "module", object);
-    Py_DECREF(object);
+  return result;
+}
 
-    Py_INCREF(modules_callback);
 
-    callback_result = PyObject_CallFunctionObjArgs(
-        modules_callback,
-        module_info_dict,
+static int handle_too_many_matches(
+    YR_SCAN_CONTEXT* context,
+    YR_STRING* string,
+    CALLBACK_DATA* data)
+{
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
+  PyObject* warning_type = NULL;
+  PyObject* identifier = NULL;
+
+  int result = CALLBACK_CONTINUE;
+
+  if (data->warning_callback == NULL)
+  {
+    char message[200];
+
+    snprintf(
+        message,
+        sizeof(message),
+        "too many matches for string %s in rule \"%s\"",
+        string->identifier,
+        context->rules->rules_table[string->rule_idx].identifier);
+
+    if (PyErr_WarnEx(PyExc_RuntimeWarning, message, 1) == -1)
+      result = CALLBACK_ERROR;
+  }
+  else
+  {
+    Py_INCREF(data->warning_callback);
+
+    identifier = PyBytes_FromString(string->identifier);
+
+    if (identifier == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    warning_type = PyLong_FromLong(CALLBACK_MSG_TOO_MANY_MATCHES);
+
+    if (warning_type == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    PyObject* callback_result = PyObject_CallFunctionObjArgs(
+        data->warning_callback,
+        warning_type,
+        identifier,
         NULL);
 
     if (callback_result != NULL)
@@ -703,99 +737,77 @@ int yara_callback(
       {
         result = (int) PyLong_AsLong(callback_result);
       }
-
-      Py_DECREF(callback_result);
     }
     else
     {
       result = CALLBACK_ERROR;
     }
 
-    Py_DECREF(module_info_dict);
-    Py_DECREF(modules_callback);
-    PyGILState_Release(gil_state);
-
-    return result;
+    Py_XDECREF(callback_result);
   }
 
-  if (message == CALLBACK_MSG_TOO_MANY_MATCHES)
+_exit:
+
+  Py_XDECREF(identifier);
+  Py_XDECREF(warning_type);
+  Py_XDECREF(data->warning_callback);
+
+  PyGILState_Release(gil_state);
+
+  return result;
+}
+
+
+#define CALLBACK_MATCHES 0x01
+#define CALLBACK_NON_MATCHES 0x02
+#define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
+
+
+int yara_callback(
+    YR_SCAN_CONTEXT* context,
+    int message,
+    void* message_data,
+    void* user_data)
+{
+  YR_STRING* string;
+  YR_MATCH* m;
+  YR_META* meta;
+  YR_RULE* rule;
+
+  const char* tag;
+
+  PyObject* tag_list = NULL;
+  PyObject* string_list = NULL;
+  PyObject* meta_list = NULL;
+  PyObject* match;
+  PyObject* callback_dict;
+  PyObject* object;
+  PyObject* tuple;
+  PyObject* matches = ((CALLBACK_DATA*) user_data)->matches;
+  PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
+  PyObject* callback_result;
+
+  int which = ((CALLBACK_DATA*) user_data)->which;
+
+  // If the rule doesn't match and the user has not specified that they want to
+  // see non-matches then nothing to do here.
+  if (message == CALLBACK_MSG_RULE_NOT_MATCHING && callback != NULL &&
+      (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
+    return CALLBACK_CONTINUE;
+
+  switch(message)
   {
-    gil_state = PyGILState_Ensure();
+  case CALLBACK_MSG_IMPORT_MODULE:
+    return handle_import_module(message_data, user_data);
 
-    if (warning_callback == NULL)
-    {
-      char message[200];
+  case CALLBACK_MSG_MODULE_IMPORTED:
+    return handle_module_imported(message_data, user_data);
 
-      string = (YR_STRING*) message_data;
+  case CALLBACK_MSG_TOO_MANY_MATCHES:
+    return handle_too_many_matches(context, message_data, user_data);
 
-      snprintf(
-          message,
-          sizeof(message),
-          "too many matches for string %s in rule \"%s\"",
-          string->identifier,
-          context->rules->rules_table[string->rule_idx].identifier);
-
-      result = PyErr_WarnEx(PyExc_RuntimeWarning, message, 1);
-
-      if (result == -1)
-        result = CALLBACK_ERROR;
-      else
-        result = CALLBACK_CONTINUE;
-
-      PyGILState_Release(gil_state);
-      return result;
-    }
-    else
-    {
-      identifier = PyBytes_FromString(((YR_STRING*) message_data)->identifier);
-
-      if (identifier == NULL)
-      {
-        PyGILState_Release(gil_state);
-        return CALLBACK_ERROR;
-      }
-
-      warning_type = PyLong_FromLong(CALLBACK_MSG_TOO_MANY_MATCHES);
-      if (warning_type == NULL)
-      {
-        Py_DECREF(identifier);
-        PyGILState_Release(gil_state);
-        return CALLBACK_ERROR;
-      }
-
-      Py_INCREF(warning_callback);
-
-      callback_result = PyObject_CallFunctionObjArgs(
-          warning_callback,
-          warning_type,
-          identifier,
-          NULL);
-
-      if (callback_result != NULL)
-      {
-        #if PY_MAJOR_VERSION >= 3
-        if (PyLong_Check(callback_result))
-        #else
-        if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
-        #endif
-        {
-          result = (int) PyLong_AsLong(callback_result);
-        }
-
-        Py_DECREF(callback_result);
-      }
-      else
-      {
-        result = CALLBACK_ERROR;
-      }
-
-      Py_DECREF(identifier);
-      Py_DECREF(warning_type);
-      Py_DECREF(warning_callback);
-
-      PyGILState_Release(gil_state);
-      return CALLBACK_CONTINUE;
-    }
+  case CALLBACK_MSG_SCAN_FINISHED:
+    return CALLBACK_CONTINUE;
   }
 
   // At this point we have handled all the other cases of when this callback
@@ -807,9 +819,12 @@ int yara_callback(
   //
   // In both cases, we need to create the data that will be either passed back
   // to the python callback or stored in the matches list.
+
+  int result = CALLBACK_CONTINUE;
+
   rule = (YR_RULE*) message_data;
 
-  gil_state = PyGILState_Ensure();
+  PyGILState_STATE gil_state = PyGILState_Ensure();
 
   tag_list = PyList_New(0);
   string_list = PyList_New(0);
