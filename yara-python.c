@@ -625,8 +625,7 @@ int yara_callback(
 
   // If the rule doesn't match and the user has not specified that they want to
   // see non-matches then nothing to do here.
-  if (message == CALLBACK_MSG_RULE_NOT_MATCHING &&
-      callback != NULL &&
+  if (message == CALLBACK_MSG_RULE_NOT_MATCHING && callback != NULL &&
       (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
     return CALLBACK_CONTINUE;
 
@@ -725,14 +724,18 @@ int yara_callback(
 
     if (warning_callback == NULL)
     {
-      // If the user doesn't provide a callback we will print a warning.
-      // NOTE: PyErr_WarnFormat is new in python 3.2. I can go with something
-      // more portable if desired.
-      result = PyErr_WarnFormat(
-          PyExc_RuntimeWarning,
-          1,
-          "maximum matches for string %s. Results may be invalid.",
-          ((YR_STRING*) message_data)->identifier);
+      char message[200];
+
+      string = (YR_STRING*) message_data;
+
+      snprintf(
+          message,
+          sizeof(message),
+          "too many matches for string %s in rule \"%s\"",
+          string->identifier,
+          context->rules->rules_table[string->rule_idx].identifier);
+
+      result = PyErr_WarnEx(PyExc_RuntimeWarning, message, 1);
 
       if (result == -1)
         result = CALLBACK_ERROR;
