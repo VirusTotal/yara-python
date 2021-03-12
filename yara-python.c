@@ -802,8 +802,8 @@ int yara_callback(
   //
   // 2 A non-matching rule and the user has requested to see non-matching rules.
   //
-  // In both cases, we need to create the data to be passed back to the python
-  // callback.
+  // In both cases, we need to create the data that will be either passed back
+  // to the python callback or stored in the matches list.
   rule = (YR_RULE*) message_data;
 
   gil_state = PyGILState_Ensure();
