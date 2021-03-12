@@ -623,6 +623,13 @@ int yara_callback(
 
   int result = CALLBACK_CONTINUE;
 
+  // If the rule doesn't match and the user has not specified that they want to
+  // see non-matches then nothing to do here.
+  if (message == CALLBACK_MSG_RULE_NOT_MATCHING &&
+      callback != NULL &&
+      (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
+    return CALLBACK_CONTINUE;
+
   if (message == CALLBACK_MSG_SCAN_FINISHED)
     return CALLBACK_CONTINUE;
 
@@ -788,7 +795,15 @@ int yara_callback(
     }
   }
 
-
+  // At this point we have handled all the other cases of when this callback
+  // can be called. The only things left are:
+  //
+  // 1. A matching rule.
+  //
+  // 2 A non-matching rule and the user has requested to see non-matching rules.
+  //
+  // In both cases, we need to create the data that will be either passed back
+  // to the python callback or stored in the matches list.
   rule = (YR_RULE*) message_data;
 
   gil_state = PyGILState_Ensure();
