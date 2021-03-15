@@ -789,12 +789,6 @@ int yara_callback(
 
   int which = ((CALLBACK_DATA*) user_data)->which;
 
-  // If the rule doesn't match and the user has not specified that they want to
-  // see non-matches then nothing to do here.
-  if (message == CALLBACK_MSG_RULE_NOT_MATCHING && callback != NULL &&
-      (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
-    return CALLBACK_CONTINUE;
-
   switch(message)
   {
   case CALLBACK_MSG_IMPORT_MODULE:
@@ -808,6 +802,14 @@ int yara_callback(
 
   case CALLBACK_MSG_SCAN_FINISHED:
     return CALLBACK_CONTINUE;
+
+  case CALLBACK_MSG_RULE_NOT_MATCHING:
+    // If the rule doesn't match and the user has not specified that they want
+    // to see non-matches then there's nothing more to do and we return
+    // CALLBACK_CONTINUE, keep executing the function if otherwise.
+
+    if ((which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
+      return CALLBACK_CONTINUE;
   }
 
   // At this point we have handled all the other cases of when this callback
