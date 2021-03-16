@@ -416,7 +416,7 @@ typedef struct _CALLBACK_DATA
   PyObject* callback;
   PyObject* modules_data;
   PyObject* modules_callback;
-  PyObject* warning_callback;
+  PyObject* warnings_callback;
   int which;
 
 } CALLBACK_DATA;
@@ -687,7 +687,7 @@ static int handle_too_many_matches(
 
   int result = CALLBACK_CONTINUE;
 
-  if (data->warning_callback == NULL)
+  if (data->warnings_callback == NULL)
   {
     char message[200];
 
@@ -703,7 +703,7 @@ static int handle_too_many_matches(
   }
   else
   {
-    Py_INCREF(data->warning_callback);
+    Py_INCREF(data->warnings_callback);
 
     identifier = PyBytes_FromString(string->identifier);
 
@@ -722,7 +722,7 @@ static int handle_too_many_matches(
     }
 
     PyObject* callback_result = PyObject_CallFunctionObjArgs(
-        data->warning_callback,
+        data->warnings_callback,
         warning_type,
         identifier,
         NULL);
@@ -750,7 +750,7 @@ _exit:
 
   Py_XDECREF(identifier);
   Py_XDECREF(warning_type);
-  Py_XDECREF(data->warning_callback);
+  Py_XDECREF(data->warnings_callback);
 
   PyGILState_Release(gil_state);
 
@@ -1493,7 +1493,7 @@ static PyObject* Rules_match(
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
-      "modules_callback", "which_callbacks", "warning_callback", NULL
+      "modules_callback", "which_callbacks", "warnings_callback", NULL
       };
 
   char* filepath = NULL;
@@ -1515,7 +1515,7 @@ static PyObject* Rules_match(
   callback_data.callback = NULL;
   callback_data.modules_data = NULL;
   callback_data.modules_callback = NULL;
-  callback_data.warning_callback = NULL;
+  callback_data.warnings_callback = NULL;
   callback_data.which = CALLBACK_ALL;
 
   if (PyArg_ParseTupleAndKeywords(
@@ -1533,7 +1533,7 @@ static PyObject* Rules_match(
         &callback_data.modules_data,
         &callback_data.modules_callback,
         &callback_data.which,
-        &callback_data.warning_callback))
+        &callback_data.warnings_callback))
   {
     if (filepath == NULL && data.buf == NULL && pid == 0)
     {
@@ -1564,14 +1564,14 @@ static PyObject* Rules_match(
       }
     }
 
-    if (callback_data.warning_callback != NULL)
+    if (callback_data.warnings_callback != NULL)
     {
-      if (!PyCallable_Check(callback_data.warning_callback))
+      if (!PyCallable_Check(callback_data.warnings_callback))
       {
         PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
-            "'warning_callback' must be callable");
+            "'warnings_callback' must be callable");
       }
     }
 
