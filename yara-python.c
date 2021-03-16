@@ -804,11 +804,13 @@ int yara_callback(
     return CALLBACK_CONTINUE;
 
   case CALLBACK_MSG_RULE_NOT_MATCHING:
-    // If the rule doesn't match and the user has not specified that they want
-    // to see non-matches then there's nothing more to do and we return
-    // CALLBACK_CONTINUE, keep executing the function if otherwise.
+    // In cases where the rule doesn't match and the user didn't provided a
+    // callback function or is not interested in getting notified about
+    // non-matches, there's nothing more do to here, keep executing the function
+    // if otherwise.
 
-    if ((which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
+    if (callback == NULL ||
+        (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
       return CALLBACK_CONTINUE;
   }
 
@@ -1616,6 +1618,7 @@ static PyObject* Rules_match(
       callback_data.matches = PyList_New(0);
 
       Py_BEGIN_ALLOW_THREADS
+
       error = yr_rules_scan_file(
           object->rules,
           filepath,
@@ -1623,7 +1626,6 @@ static PyObject* Rules_match(
           yara_callback,
           &callback_data,
           timeout);
-
 
       Py_END_ALLOW_THREADS
     }
