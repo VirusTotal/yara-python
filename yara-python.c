@@ -1499,7 +1499,7 @@ static PyObject* Rules_match(
   char* filepath = NULL;
   Py_buffer data = {0};
 
-  int pid = 0;
+  int pid = -1;
   int timeout = 0;
   int error = ERROR_SUCCESS;
   int fast_mode = 0;
@@ -1535,7 +1535,7 @@ static PyObject* Rules_match(
         &callback_data.which,
         &callback_data.warnings_callback))
   {
-    if (filepath == NULL && data.buf == NULL && pid == 0)
+    if (filepath == NULL && data.buf == NULL && pid == -1)
     {
       return PyErr_Format(
           PyExc_TypeError,
@@ -1646,7 +1646,7 @@ static PyObject* Rules_match(
 
       Py_END_ALLOW_THREADS
     }
-    else if (pid != 0)
+    else if (pid != -1)
     {
       callback_data.matches = PyList_New(0);
 
@@ -1686,7 +1686,7 @@ static PyObject* Rules_match(
         {
           handle_error(error, filepath);
         }
-        else if (pid != 0)
+        else if (pid != -1)
         {
           handle_error(error, "<proc>");
         }
