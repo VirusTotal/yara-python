@@ -22,6 +22,7 @@ limitations under the License.
 
 #if PY_VERSION_HEX >= 0x02060000
 #include "bytesobject.h"
+#include "structseq.h"
 #elif PY_VERSION_HEX < 0x02060000
 #define PyBytes_AsString PyString_AsString
 #define PyBytes_Check PyString_Check
@@ -421,6 +422,21 @@ typedef struct _CALLBACK_DATA
 
 } CALLBACK_DATA;
 
+static PyStructSequence_Field RuleString_Fields[] = {
+  {"namespace", "Namespace of the rule"},
+  {"rule", "Identifier of the rule"},
+  {"string", "Identifier of the string"},
+  {NULL}
+};
+
+static PyStructSequence_Desc RuleString_Desc = {
+  "RuleString",
+  "Named tuple tying together rule identifier and string identifier",
+  RuleString_Fields,
+  (sizeof(RuleString_Fields) / sizeof(RuleString_Fields[0])) - 1
+};
+
+static PyTypeObject RuleString_Type = {0};
 
 // Forward declarations for handling module data.
 PyObject* convert_structure_to_python(
@@ -683,7 +699,11 @@ static int handle_too_many_matches(
   PyGILState_STATE gil_state = PyGILState_Ensure();
 
   PyObject* warning_type = NULL;
-  PyObject* identifier = NULL;
+  PyObject* string_identifier = NULL;
+  PyObject* rule_identifier = NULL;
+  PyObject* namespace_identifier = NULL;
+  PyObject* rule_string = NULL;
+  YR_RULE* rule = NULL;
 
   int result = CALLBACK_CONTINUE;
 
@@ -705,13 +725,48 @@ static int handle_too_many_matches(
   {
     Py_INCREF(data->warnings_callback);
 
-    identifier = PyBytes_FromString(string->identifier);
+    string_identifier = PY_STRING(string->identifier);
 
-    if (identifier == NULL)
+    if (string_identifier == NULL)
     {
       result = CALLBACK_ERROR;
       goto _exit;
     }
+
+    rule = &context->rules->rules_table[string->rule_idx];
+    rule_identifier = PY_STRING(rule->identifier);
+
+    if (rule_identifier == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    namespace_identifier = PY_STRING(rule->ns->name);
+
+    if (namespace_identifier == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    rule_string = PyStructSequence_New(&RuleString_Type);
+
+    if (rule_string == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    PyStructSequence_SET_ITEM(rule_string, 0, namespace_identifier);
+    PyStructSequence_SET_ITEM(rule_string, 1, rule_identifier);
+    PyStructSequence_SET_ITEM(rule_string, 2, string_identifier);
+
+    // PyStructSequenece steals the reference so we NULL these
+    // so that Py_XDECREF() can be used in _exit label
+    namespace_identifier = NULL;
+    rule_identifier = NULL;
+    string_identifier = NULL;
 
     warning_type = PyLong_FromLong(CALLBACK_MSG_TOO_MANY_MATCHES);
 
@@ -724,7 +779,7 @@ static int handle_too_many_matches(
     PyObject* callback_result = PyObject_CallFunctionObjArgs(
         data->warnings_callback,
         warning_type,
-        identifier,
+        rule_string,
         NULL);
 
     if (callback_result != NULL)
@@ -748,7 +803,10 @@ static int handle_too_many_matches(
 
 _exit:
 
-  Py_XDECREF(identifier);
+  Py_XDECREF(namespace_identifier);
+  Py_XDECREF(rule_identifier);
+  Py_XDECREF(string_identifier);
+  Py_XDECREF(rule_string);
   Py_XDECREF(warning_type);
   Py_XDECREF(data->warnings_callback);
 
@@ -2562,6 +2620,8 @@ MOD_INIT(yara)
 
   if (PyType_Ready(&Match_Type) < 0)
     return MOD_ERROR_VAL;
+
+  PyStructSequence_InitType(&RuleString_Type, &RuleString_Desc);
 
   PyModule_AddObject(m, "Rule", (PyObject*) &Rule_Type);
   PyModule_AddObject(m, "Rules", (PyObject*) &Rules_Type);
