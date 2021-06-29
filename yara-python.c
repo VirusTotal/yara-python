@@ -1891,6 +1891,8 @@ void raise_exception_on_error(
     const char* message,
     void* user_data)
 {
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
   if (error_level == YARA_ERROR_LEVEL_ERROR)
   {
     if (file_name != NULL)
@@ -1925,6 +1927,8 @@ void raise_exception_on_error(
     PyList_Append(warnings, warning_msg);
     Py_DECREF(warning_msg);
   }
+
+  PyGILState_Release(gil_state);
 }
 
 
