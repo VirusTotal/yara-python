@@ -1891,6 +1891,8 @@ void raise_exception_on_error(
     const char* message,
     void* user_data)
 {
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
   if (error_level == YARA_ERROR_LEVEL_ERROR)
   {
     if (file_name != NULL)
@@ -1925,6 +1927,8 @@ void raise_exception_on_error(
     PyList_Append(warnings, warning_msg);
     Py_DECREF(warning_msg);
   }
+
+  PyGILState_Release(gil_state);
 }
 
 
@@ -2228,8 +2232,10 @@ static PyObject* yara_compile(
 
       if (fh != NULL)
       {
+        Py_BEGIN_ALLOW_THREADS
         error = yr_compiler_add_file(compiler, fh, NULL, filepath);
         fclose(fh);
+        Py_END_ALLOW_THREADS
       }
       else
       {
@@ -2238,7 +2244,9 @@ static PyObject* yara_compile(
     }
     else if (source != NULL)
     {
+      Py_BEGIN_ALLOW_THREADS
       error = yr_compiler_add_string(compiler, source, NULL);
+      Py_END_ALLOW_THREADS
     }
     else if (file != NULL)
     {
@@ -2246,9 +2254,11 @@ static PyObject* yara_compile(
 
       if (fd != -1)
       {
+        Py_BEGIN_ALLOW_THREADS
         fh = fdopen(fd, "r");
         error = yr_compiler_add_file(compiler, fh, NULL, NULL);
         fclose(fh);
+        Py_END_ALLOW_THREADS
       }
       else
       {
@@ -2268,7 +2278,9 @@ static PyObject* yara_compile(
 
           if (source != NULL && ns != NULL)
           {
+            Py_BEGIN_ALLOW_THREADS
             error = yr_compiler_add_string(compiler, source, ns);
+            Py_END_ALLOW_THREADS
 
             if (error > 0)
               break;
@@ -2305,8 +2317,10 @@ static PyObject* yara_compile(
 
             if (fh != NULL)
             {
+              Py_BEGIN_ALLOW_THREADS
               error = yr_compiler_add_file(compiler, fh, ns, filepath);
               fclose(fh);
+              Py_END_ALLOW_THREADS
 
               if (error > 0)
                 break;
