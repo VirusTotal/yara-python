@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
+from setuptools import setup, Command, Extension
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
-from setuptools import setup, Command, Extension
 from codecs import open
 
 import distutils.errors
@@ -72,15 +72,35 @@ def muted(*streams):
     devnull.close()
 
 
-def has_function(function_name, libraries=None):
+def has_function(function_name, include_dirs=None, libraries=None, library_dirs=None):
   """Checks if a given functions exists in the current platform."""
   compiler = distutils.ccompiler.new_compiler()
   with muted(sys.stdout, sys.stderr):
-    result = compiler.has_function(
-        function_name, libraries=libraries)
+      result = compiler.has_function(
+          function_name,
+          include_dirs=include_dirs,
+          libraries=libraries,
+          library_dirs=library_dirs)
   if os.path.exists('a.out'):
     os.remove('a.out')
   return result
+
+
+def has_header(header_name):
+  compiler = distutils.ccompiler.new_compiler()
+  with muted(sys.stdout, sys.stderr):
+    with tempfile.NamedTemporaryFile(mode='w', prefix=header_name, delete=False, suffix='.c') as f:
+      f.write("""
+#include <{}>
+
+int main() {{ return 0; }}
+      """.format(header_name))
+      f.close()
+      try:
+        compiler.compile([f.name])
+      except distutils.errors.CompileError:
+        return False
+  return True
 
 
 class BuildCommand(build):
@@ -186,6 +206,7 @@ class BuildExtCommand(build_ext):
       module.library_dirs.append('/opt/local/lib')
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
+      module.library_dirs.append('/usr/local/opt/openssl/lib')
     elif building_for_freebsd:
       module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_FREEBSD_PROC', '1'))
@@ -206,6 +227,9 @@ class BuildExtCommand(build_ext):
       module.define_macros.append(('USE_NO_PROC', '1'))
       module.extra_compile_args.append('-std=c99')
 
+    if has_header('stdbool.h'):
+      module.define_macros.append(('HAVE_STDBOOL_H', '1'))
+
     if has_function('memmem'):
       module.define_macros.append(('HAVE_MEMMEM', '1'))
     if has_function('strlcpy'):
@@ -220,11 +244,14 @@ class BuildExtCommand(build_ext):
       module.libraries.append('yara')
     else:
       if not self.define or not ('HASH_MODULE', '1') in self.define:
-        if (has_function('MD5_Init', libraries=['crypto']) and
-            has_function('SHA256_Init', libraries=['crypto'])):
+        if (has_function('MD5_Init', include_dirs=module.include_dirs, libraries=['crypto'], library_dirs=module.library_dirs) and
+            has_function('SHA256_Init', include_dirs=module.include_dirs, libraries=['crypto'], library_dirs=module.library_dirs)):
           module.define_macros.append(('HASH_MODULE', '1'))
           module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
           module.libraries.append('crypto')
+        elif building_for_windows:
+          module.define_macros.append(('HASH_MODULE', '1'))
+          module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
         else:
           exclusions.append('yara/libyara/modules/hash/hash.c')
 
@@ -302,7 +329,7 @@ with open('README.md', 'r', 'utf-8') as f:
 
 setup(
     name='magic-yara-python',
-    version='4.0.2.1',
+    version='4.1.2',
     description='Fork of yara-python that enables more modules by default',
     long_description=readme,
     license='Apache 2.0',

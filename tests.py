@@ -267,6 +267,11 @@ RE_TESTS = [
 ]
 
 
+def warnings_callback(warning_type, message):
+    global warnings_callback_called
+    warnings_callback_called = warning_type
+
+
 class TestYara(unittest.TestCase):
 
     def assertTrueRules(self, rules, data='dummy'):
@@ -1086,6 +1091,22 @@ class TestYara(unittest.TestCase):
         self.assertTrue(r[0].is_global == True)
         self.assertTrue(r[1].is_private == True)
 
+    def testMatchMemoryview(self):
+
+        r = yara.compile(source='rule test { strings: $s = "test" condition: $s }')
+        data = memoryview(b"test")
+
+        self.assertTrue(r.match(data=data))
+
+    def testWarningCallback(self):
+        global warnings_callback_called
+
+        warnings_callback_called = False
+        r = yara.compile(source='rule x { strings: $x = "X" condition: $x }')
+        data = memoryview(b"X" * 1000099)
+        r.match(data=data, warnings_callback=warnings_callback)
+
+        self.assertTrue(warnings_callback_called, yara.CALLBACK_TOO_MANY_MATCHES)
 
 if __name__ == "__main__":
     unittest.main()

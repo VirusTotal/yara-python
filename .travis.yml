@@ -6,12 +6,8 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
-
-matrix:
-  include:
-    - python: "3.7"
-      dist: xenial
-      sudo: true
+  - "3.8"
+  - "3.9"
 
 before_install:
   - sudo apt-get -qq update

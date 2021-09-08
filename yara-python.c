@@ -47,12 +47,18 @@ typedef long Py_hash_t;
 
 #if PY_MAJOR_VERSION >= 3
 #define PY_STRING(x) PyUnicode_DecodeUTF8(x, strlen(x), "ignore" )
+#define PY_STRING_FORMAT(...) PyUnicode_FromFormat(__VA_ARGS__)
 #define PY_STRING_TO_C(x) PyUnicode_AsUTF8(x)
 #define PY_STRING_CHECK(x) PyUnicode_Check(x)
 #else
 #define PY_STRING(x) PyString_FromString(x)
+#define PY_STRING_FORMAT(...) PyString_FromFormat(__VA_ARGS__)
 #define PY_STRING_TO_C(x) PyString_AsString(x)
 #define PY_STRING_CHECK(x) (PyString_Check(x) || PyUnicode_Check(x))
+#endif
+
+#if PY_VERSION_HEX < 0x03020000
+#define PyDescr_NAME(x) (((PyDescrObject*)x)->d_name)
 #endif
 
 /* Module globals */
@@ -410,6 +416,7 @@ typedef struct _CALLBACK_DATA
   PyObject* callback;
   PyObject* modules_data;
   PyObject* modules_callback;
+  PyObject* warnings_callback;
   int which;
 
 } CALLBACK_DATA;
@@ -512,8 +519,6 @@ PyObject* convert_structure_to_python(
 PyObject* convert_array_to_python(
     YR_OBJECT_ARRAY* array)
 {
-  int i;
-
   PyObject* py_object;
   PyObject* py_list = PyList_New(0);
 
@@ -524,7 +529,7 @@ PyObject* convert_array_to_python(
   if (array->items == NULL)
     return py_list;
 
-  for (i = 0; i < array->items->length; i++)
+  for (int i = 0; i < array->items->length; i++)
   {
     py_object = convert_object_to_python(array->items->objects[i]);
 
@@ -542,8 +547,6 @@ PyObject* convert_array_to_python(
 PyObject* convert_dictionary_to_python(
     YR_OBJECT_DICTIONARY* dictionary)
 {
-  int i;
-
   PyObject* py_object;
   PyObject* py_dict = PyDict_New();
 
@@ -554,7 +557,7 @@ PyObject* convert_dictionary_to_python(
   if (dictionary->items == NULL)
     return py_dict;
 
-  for (i = 0; i < dictionary->items->used; i++)
+  for (int i = 0; i < dictionary->items->used; i++)
   {
     py_object = convert_object_to_python(dictionary->items->objects[i].obj);
 
@@ -573,107 +576,155 @@ PyObject* convert_dictionary_to_python(
 }
 
 
-#define CALLBACK_MATCHES 0x01
-#define CALLBACK_NON_MATCHES 0x02
-#define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
-
-int yara_callback(
-    YR_SCAN_CONTEXT* context,
-    int message,
-    void* message_data,
-    void* user_data)
+static int handle_import_module(
+    YR_MODULE_IMPORT* module_import,
+    CALLBACK_DATA* data)
 {
-  YR_STRING* string;
-  YR_MATCH* m;
-  YR_META* meta;
-  YR_RULE* rule;
-  YR_MODULE_IMPORT* module_import;
-
-  const char* tag;
-
-  PyObject* tag_list = NULL;
-  PyObject* string_list = NULL;
-  PyObject* meta_list = NULL;
-  PyObject* match;
-  PyObject* callback_dict;
-  PyObject* object;
-  PyObject* tuple;
-  PyObject* matches = ((CALLBACK_DATA*) user_data)->matches;
-  PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
-  PyObject* modules_data = ((CALLBACK_DATA*) user_data)->modules_data;
-  PyObject* modules_callback = ((CALLBACK_DATA*) user_data)->modules_callback;
-  PyObject* module_data;
-  PyObject* callback_result;
-  PyObject* module_info_dict;
-  int which = ((CALLBACK_DATA*) user_data)->which;
-
-  Py_ssize_t data_size;
-  PyGILState_STATE gil_state;
-
-  int result = CALLBACK_CONTINUE;
-
-  if (message == CALLBACK_MSG_SCAN_FINISHED)
+  if (data->modules_data == NULL)
     return CALLBACK_CONTINUE;
 
-  if (message == CALLBACK_MSG_IMPORT_MODULE && modules_data == NULL)
-    return CALLBACK_CONTINUE;
+  PyGILState_STATE gil_state = PyGILState_Ensure();
 
-  if (message == CALLBACK_MSG_MODULE_IMPORTED && modules_callback == NULL)
-    return CALLBACK_CONTINUE;
+  PyObject* module_data = PyDict_GetItemString(
+      data->modules_data,
+      module_import->module_name);
 
-  if (message == CALLBACK_MSG_IMPORT_MODULE)
+  #if PY_MAJOR_VERSION >= 3
+  if (module_data != NULL && PyBytes_Check(module_data))
+  #else
+  if (module_data != NULL && PyString_Check(module_data))
+  #endif
   {
-    gil_state = PyGILState_Ensure();
-    module_import = (YR_MODULE_IMPORT*) message_data;
-
-    module_data = PyDict_GetItemString(
-        modules_data,
-        module_import->module_name);
+    Py_ssize_t data_size;
 
     #if PY_MAJOR_VERSION >= 3
-    if (module_data != NULL && PyBytes_Check(module_data))
+    PyBytes_AsStringAndSize(
+        module_data,
+        (char**) &module_import->module_data,
+        &data_size);
     #else
-    if (module_data != NULL && PyString_Check(module_data))
+    PyString_AsStringAndSize(
+        module_data,
+        (char**) &module_import->module_data,
+        &data_size);
     #endif
-    {
-      #if PY_MAJOR_VERSION >= 3
-      PyBytes_AsStringAndSize(
-          module_data,
-          (char**) &module_import->module_data,
-          &data_size);
-      #else
-      PyString_AsStringAndSize(
-          module_data,
-          (char**) &module_import->module_data,
-          &data_size);
-      #endif
 
-      module_import->module_data_size = data_size;
-    }
+    module_import->module_data_size = data_size;
+  }
 
+  PyGILState_Release(gil_state);
+
+  return CALLBACK_CONTINUE;
+}
+
+
+static int handle_module_imported(
+    void* message_data,
+    CALLBACK_DATA* data)
+{
+  if (data->modules_callback == NULL)
+    return CALLBACK_CONTINUE;
+
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
+  PyObject* module_info_dict = convert_structure_to_python(
+      object_as_structure(message_data));
+
+  if (module_info_dict == NULL)
+  {
     PyGILState_Release(gil_state);
     return CALLBACK_CONTINUE;
   }
 
-  if (message == CALLBACK_MSG_MODULE_IMPORTED)
+  PyObject* object = PY_STRING(object_as_structure(message_data)->identifier);
+  PyDict_SetItemString(module_info_dict, "module", object);
+  Py_DECREF(object);
+
+  Py_INCREF(data->modules_callback);
+
+  PyObject* callback_result = PyObject_CallFunctionObjArgs(
+      data->modules_callback,
+      module_info_dict,
+      NULL);
+
+  int result = CALLBACK_CONTINUE;
+
+  if (callback_result != NULL)
   {
-    gil_state = PyGILState_Ensure();
+    #if PY_MAJOR_VERSION >= 3
+    if (PyLong_Check(callback_result))
+    #else
+    if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
+    #endif
+    {
+      result = (int) PyLong_AsLong(callback_result);
+    }
+  }
+  else
+  {
+    result = CALLBACK_ERROR;
+  }
 
-    module_info_dict = convert_structure_to_python(
-        object_as_structure(message_data));
+  Py_XDECREF(callback_result);
+  Py_DECREF(module_info_dict);
+  Py_DECREF(data->modules_callback);
 
-    if (module_info_dict == NULL)
-      return CALLBACK_CONTINUE;
+  PyGILState_Release(gil_state);
 
-    object = PY_STRING(object_as_structure(message_data)->identifier);
-    PyDict_SetItemString(module_info_dict, "module", object);
-    Py_DECREF(object);
+  return result;
+}
 
-    Py_INCREF(modules_callback);
 
-    callback_result = PyObject_CallFunctionObjArgs(
-        modules_callback,
-        module_info_dict,
+static int handle_too_many_matches(
+    YR_SCAN_CONTEXT* context,
+    YR_STRING* string,
+    CALLBACK_DATA* data)
+{
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+
+  PyObject* warning_type = NULL;
+  PyObject* identifier = NULL;
+
+  int result = CALLBACK_CONTINUE;
+
+  if (data->warnings_callback == NULL)
+  {
+    char message[200];
+
+    snprintf(
+        message,
+        sizeof(message),
+        "too many matches for string %s in rule \"%s\"",
+        string->identifier,
+        context->rules->rules_table[string->rule_idx].identifier);
+
+    if (PyErr_WarnEx(PyExc_RuntimeWarning, message, 1) == -1)
+      result = CALLBACK_ERROR;
+  }
+  else
+  {
+    Py_INCREF(data->warnings_callback);
+
+    identifier = PyBytes_FromString(string->identifier);
+
+    if (identifier == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    warning_type = PyLong_FromLong(CALLBACK_MSG_TOO_MANY_MATCHES);
+
+    if (warning_type == NULL)
+    {
+      result = CALLBACK_ERROR;
+      goto _exit;
+    }
+
+    PyObject* callback_result = PyObject_CallFunctionObjArgs(
+        data->warnings_callback,
+        warning_type,
+        identifier,
         NULL);
 
     if (callback_result != NULL)
@@ -686,24 +737,98 @@ int yara_callback(
       {
         result = (int) PyLong_AsLong(callback_result);
       }
-
-      Py_DECREF(callback_result);
     }
     else
     {
       result = CALLBACK_ERROR;
     }
 
-    Py_DECREF(module_info_dict);
-    Py_DECREF(modules_callback);
-    PyGILState_Release(gil_state);
-
-    return result;
+    Py_XDECREF(callback_result);
   }
+
+_exit:
+
+  Py_XDECREF(identifier);
+  Py_XDECREF(warning_type);
+  Py_XDECREF(data->warnings_callback);
+
+  PyGILState_Release(gil_state);
+
+  return result;
+}
+
+
+#define CALLBACK_MATCHES 0x01
+#define CALLBACK_NON_MATCHES 0x02
+#define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
+
+
+int yara_callback(
+    YR_SCAN_CONTEXT* context,
+    int message,
+    void* message_data,
+    void* user_data)
+{
+  YR_STRING* string;
+  YR_MATCH* m;
+  YR_META* meta;
+  YR_RULE* rule;
+
+  const char* tag;
+
+  PyObject* tag_list = NULL;
+  PyObject* string_list = NULL;
+  PyObject* meta_list = NULL;
+  PyObject* match;
+  PyObject* callback_dict;
+  PyObject* object;
+  PyObject* tuple;
+  PyObject* matches = ((CALLBACK_DATA*) user_data)->matches;
+  PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
+  PyObject* callback_result;
+
+  int which = ((CALLBACK_DATA*) user_data)->which;
+
+  switch(message)
+  {
+  case CALLBACK_MSG_IMPORT_MODULE:
+    return handle_import_module(message_data, user_data);
+
+  case CALLBACK_MSG_MODULE_IMPORTED:
+    return handle_module_imported(message_data, user_data);
+
+  case CALLBACK_MSG_TOO_MANY_MATCHES:
+    return handle_too_many_matches(context, message_data, user_data);
+
+  case CALLBACK_MSG_SCAN_FINISHED:
+    return CALLBACK_CONTINUE;
+
+  case CALLBACK_MSG_RULE_NOT_MATCHING:
+    // In cases where the rule doesn't match and the user didn't provided a
+    // callback function or is not interested in getting notified about
+    // non-matches, there's nothing more do to here, keep executing the function
+    // if otherwise.
+
+    if (callback == NULL ||
+        (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
+      return CALLBACK_CONTINUE;
+  }
+
+  // At this point we have handled all the other cases of when this callback
+  // can be called. The only things left are:
+  //
+  // 1. A matching rule.
+  //
+  // 2 A non-matching rule and the user has requested to see non-matching rules.
+  //
+  // In both cases, we need to create the data that will be either passed back
+  // to the python callback or stored in the matches list.
+
+  int result = CALLBACK_CONTINUE;
 
   rule = (YR_RULE*) message_data;
 
-  gil_state = PyGILState_Ensure();
+  PyGILState_STATE gil_state = PyGILState_Ensure();
 
   tag_list = PyList_New(0);
   string_list = PyList_New(0);
@@ -1313,7 +1438,7 @@ static PyObject* Rules_next(
 
   if (RULE_IS_NULL(rules->iter_current_rule))
   {
-    rules->iter_current_rule = rules->rules->rules_list_head;
+    rules->iter_current_rule = rules->rules->rules_table;
     PyErr_SetNone(PyExc_StopIteration);
     return NULL;
   }
@@ -1368,15 +1493,14 @@ static PyObject* Rules_match(
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
-      "modules_callback", "which_callbacks", NULL
+      "modules_callback", "which_callbacks", "warnings_callback", NULL
       };
 
   char* filepath = NULL;
-  char* data = NULL;
+  Py_buffer data = {0};
 
-  int pid = 0;
+  int pid = -1;
   int timeout = 0;
-  Py_ssize_t length = 0;
   int error = ERROR_SUCCESS;
   int fast_mode = 0;
 
@@ -1391,26 +1515,27 @@ static PyObject* Rules_match(
   callback_data.callback = NULL;
   callback_data.modules_data = NULL;
   callback_data.modules_callback = NULL;
+  callback_data.warnings_callback = NULL;
   callback_data.which = CALLBACK_ALL;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis#OOOiOOi",
+        "|sis*OOOiOOiO",
         kwlist,
         &filepath,
         &pid,
         &data,
-        &length,
         &externals,
         &callback_data.callback,
         &fast,
         &timeout,
         &callback_data.modules_data,
         &callback_data.modules_callback,
-        &callback_data.which))
+        &callback_data.which,
+        &callback_data.warnings_callback))
   {
-    if (filepath == NULL && data == NULL && pid == 0)
+    if (filepath == NULL && data.buf == NULL && pid == -1)
     {
       return PyErr_Format(
           PyExc_TypeError,
@@ -1421,6 +1546,7 @@ static PyObject* Rules_match(
     {
       if (!PyCallable_Check(callback_data.callback))
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'callback' must be callable");
@@ -1431,9 +1557,21 @@ static PyObject* Rules_match(
     {
       if (!PyCallable_Check(callback_data.modules_callback))
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_callback' must be callable");
+      }
+    }
+
+    if (callback_data.warnings_callback != NULL)
+    {
+      if (!PyCallable_Check(callback_data.warnings_callback))
+      {
+        PyBuffer_Release(&data);
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'warnings_callback' must be callable");
       }
     }
 
@@ -1441,6 +1579,7 @@ static PyObject* Rules_match(
     {
       if (!PyDict_Check(callback_data.modules_data))
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_data' must be a dictionary");
@@ -1455,11 +1594,14 @@ static PyObject* Rules_match(
         {
           // Restore original externals provided during compiling.
           process_match_externals(object->externals, object->rules);
+
+          PyBuffer_Release(&data);
           return NULL;
         }
       }
       else
       {
+        PyBuffer_Release(&data);
         return PyErr_Format(
             PyExc_TypeError,
             "'externals' must be a dictionary");
@@ -1476,6 +1618,7 @@ static PyObject* Rules_match(
       callback_data.matches = PyList_New(0);
 
       Py_BEGIN_ALLOW_THREADS
+
       error = yr_rules_scan_file(
           object->rules,
           filepath,
@@ -1484,10 +1627,9 @@ static PyObject* Rules_match(
           &callback_data,
           timeout);
 
-
       Py_END_ALLOW_THREADS
     }
-    else if (data != NULL)
+    else if (data.buf != NULL)
     {
       callback_data.matches = PyList_New(0);
 
@@ -1495,8 +1637,8 @@ static PyObject* Rules_match(
 
       error = yr_rules_scan_mem(
           object->rules,
-          (unsigned char*) data,
-          (size_t) length,
+          (unsigned char*) data.buf,
+          (size_t) data.len,
           fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
           yara_callback,
           &callback_data,
@@ -1504,7 +1646,7 @@ static PyObject* Rules_match(
 
       Py_END_ALLOW_THREADS
     }
-    else if (pid != 0)
+    else if (pid != -1)
     {
       callback_data.matches = PyList_New(0);
 
@@ -1520,6 +1662,8 @@ static PyObject* Rules_match(
 
       Py_END_ALLOW_THREADS
     }
+
+    PyBuffer_Release(&data);
 
     // Restore original externals provided during compiling.
     if (object->externals != NULL)
@@ -1542,13 +1686,13 @@ static PyObject* Rules_match(
         {
           handle_error(error, filepath);
         }
-        else if (data != NULL)
-        {
-          handle_error(error, "<data>");
-        }
-        else if (pid != 0)
+        else if (pid != -1)
         {
           handle_error(error, "<proc>");
+        }
+        else
+        {
+          handle_error(error, "<data>");
         }
 
         #ifdef PROFILING_ENABLED
@@ -1705,50 +1849,26 @@ void raise_exception_on_error(
           line_number,
           message);
   }
-}
-
-
-void raise_exception_on_error_or_warning(
-    int error_level,
-    const char* file_name,
-    int line_number,
-    const YR_RULE* rule,
-    const char* message,
-    void* user_data)
-{
-  if (error_level == YARA_ERROR_LEVEL_ERROR)
-  {
-    if (file_name != NULL)
-      PyErr_Format(
-          YaraSyntaxError,
-          "%s(%d): %s",
-          file_name,
-          line_number,
-          message);
-    else
-      PyErr_Format(
-          YaraSyntaxError,
-          "line %d: %s",
-          line_number,
-          message);
-  }
   else
   {
+    PyObject* warnings = (PyObject*)user_data;
+    PyObject* warning_msg;
     if (file_name != NULL)
-      PyErr_Format(
-          YaraWarningError,
+      warning_msg = PY_STRING_FORMAT(
           "%s(%d): %s",
           file_name,
           line_number,
           message);
     else
-      PyErr_Format(
-          YaraWarningError,
+      warning_msg = PY_STRING_FORMAT(
           "line %d: %s",
           line_number,
           message);
+    PyList_Append(warnings, warning_msg);
+    Py_DECREF(warning_msg);
   }
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1945,6 +2065,8 @@ static PyObject* yara_compile(
   char* filepath = NULL;
   char* source = NULL;
   char* ns = NULL;
+  PyObject* warnings = PyList_New(0);
+  bool warning_error = false;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
@@ -1967,7 +2089,7 @@ static PyObject* yara_compile(
     if (error != ERROR_SUCCESS)
       return handle_error(error, NULL);
 
-    yr_compiler_set_callback(compiler, raise_exception_on_error, NULL);
+    yr_compiler_set_callback(compiler, raise_exception_on_error, warnings);
 
     if (error_on_warning != NULL)
     {
@@ -1975,10 +2097,7 @@ static PyObject* yara_compile(
       {
         if (PyObject_IsTrue(error_on_warning) == 1)
         {
-          yr_compiler_set_callback(
-              compiler,
-              raise_exception_on_error_or_warning,
-              NULL);
+          warning_error = true;
         }
       }
       else
@@ -2164,6 +2283,13 @@ static PyObject* yara_compile(
           "compile() takes 1 argument");
     }
 
+    if (warning_error && PyList_Size(warnings) > 0)
+    {
+      PyErr_SetObject(YaraWarningError, warnings);
+    }
+
+    Py_DECREF(warnings);
+
     if (PyErr_Occurred() == NULL)
     {
       rules = Rules_NEW();
@@ -2177,7 +2303,7 @@ static PyObject* yara_compile(
         if (error == ERROR_SUCCESS)
         {
           rules->rules = yara_rules;
-          rules->iter_current_rule = rules->rules->rules_list_head;
+          rules->iter_current_rule = rules->rules->rules_table;
 
           if (externals != NULL && externals != Py_None)
             rules->externals = PyDict_Copy(externals);
@@ -2278,8 +2404,8 @@ static PyObject* yara_load(
       "load() expects either a file path or a file-like object");
   }
 
-  external = rules->rules->externals_list_head;
-  rules->iter_current_rule = rules->rules->rules_list_head;
+  external = rules->rules->ext_vars_table;
+  rules->iter_current_rule = rules->rules->rules_table;
 
   if (!EXTERNAL_VARIABLE_IS_NULL(external))
     rules->externals = PyDict_New();
@@ -2365,6 +2491,24 @@ static PyMethodDef yara_methods[] = {
       ob = Py_InitModule3(name, methods, doc);
 #endif
 
+static PyObject* YaraWarningError_getwarnings(PyObject *self, void* closure)
+{
+  PyObject *args = PyObject_GetAttrString(self, "args");
+  if (!args) {
+    return NULL;
+  }
+
+  PyObject* ret = PyTuple_GetItem(args, 0);
+  Py_XINCREF(ret);
+  Py_XDECREF(args);
+  return ret;
+}
+
+static PyGetSetDef YaraWarningError_getsetters[] = {
+  {"warnings", YaraWarningError_getwarnings, NULL, NULL, NULL},
+  {NULL}
+};
+
 
 MOD_INIT(yara)
 {
@@ -2382,6 +2526,7 @@ MOD_INIT(yara)
   PyModule_AddIntConstant(m, "CALLBACK_MATCHES", CALLBACK_MATCHES);
   PyModule_AddIntConstant(m, "CALLBACK_NON_MATCHES", CALLBACK_NON_MATCHES);
   PyModule_AddIntConstant(m, "CALLBACK_ALL", CALLBACK_ALL);
+  PyModule_AddIntConstant(m, "CALLBACK_TOO_MANY_MATCHES", CALLBACK_MSG_TOO_MANY_MATCHES);
   PyModule_AddStringConstant(m, "__version__", YR_VERSION);
   PyModule_AddStringConstant(m, "YARA_VERSION", YR_VERSION);
   PyModule_AddIntConstant(m, "YARA_VERSION_HEX", YR_VERSION_HEX);
@@ -2391,6 +2536,17 @@ MOD_INIT(yara)
   YaraSyntaxError = PyErr_NewException("yara.SyntaxError", YaraError, NULL);
   YaraTimeoutError = PyErr_NewException("yara.TimeoutError", YaraError, NULL);
   YaraWarningError = PyErr_NewException("yara.WarningError", YaraError, NULL);
+
+  PyTypeObject *YaraWarningError_type = (PyTypeObject *) YaraWarningError;
+  PyObject* descr = PyDescr_NewGetSet(YaraWarningError_type, YaraWarningError_getsetters);
+
+  if (PyDict_SetItem(YaraWarningError_type->tp_dict, PyDescr_NAME(descr), descr) < 0)
+  {
+    Py_DECREF(m);
+    Py_DECREF(descr);
+  }
+
+  Py_DECREF(descr);
 #else
   YaraError = Py_BuildValue("s", "yara.Error");
   YaraSyntaxError = Py_BuildValue("s", "yara.SyntaxError");
