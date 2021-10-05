@@ -1232,7 +1232,7 @@ int process_compile_externals(
 
 int process_match_externals(
     PyObject* externals,
-    YR_RULES* rules)
+    YR_SCANNER* scanner)
 {
   PyObject* key;
   PyObject* value;
@@ -1247,8 +1247,8 @@ int process_match_externals(
 
     if (PyBool_Check(value))
     {
-      result = yr_rules_define_boolean_variable(
-          rules,
+      result = yr_scanner_define_boolean_variable(
+          scanner,
           identifier,
           PyObject_IsTrue(value));
     }
@@ -1258,15 +1258,15 @@ int process_match_externals(
     else if (PyLong_Check(value) || PyInt_Check(value))
 #endif
     {
-      result = yr_rules_define_integer_variable(
-          rules,
+      result = yr_scanner_define_integer_variable(
+          scanner,
           identifier,
           PyLong_AsLongLong(value));
     }
     else if (PyFloat_Check(value))
     {
-      result = yr_rules_define_float_variable(
-          rules,
+      result = yr_scanner_define_float_variable(
+          scanner,
           identifier,
           PyFloat_AsDouble(value));
     }
@@ -1277,8 +1277,8 @@ int process_match_externals(
       if (str == NULL)
         return ERROR_INVALID_ARGUMENT;
 
-      result = yr_rules_define_string_variable(
-          rules, identifier, str);
+      result = yr_scanner_define_string_variable(
+          scanner, identifier, str);
     }
     else
     {
@@ -1289,7 +1289,7 @@ int process_match_externals(
       return ERROR_INVALID_ARGUMENT;
     }
 
-    // yr_rules_define_xxx_variable returns ERROR_INVALID_ARGUMENT if the
+    // yr_scanner_define_xxx_variable returns ERROR_INVALID_ARGUMENT if the
     // variable wasn't previously defined in the compilation phase. Ignore
     // those errors because we don't want the "scan" method being aborted
     // because of the "externals" dictionary having more keys than those used
@@ -1567,6 +1567,13 @@ static PyObject* Rules_match(
 
   Rules* object = (Rules*) self;
 
+  YR_SCANNER* scanner;
+  if (yr_scanner_create(object->rules, &scanner) != 0) {
+      return PyErr_Format(
+          PyExc_Exception,
+          "could not create scanner");
+  }
+
   CALLBACK_DATA callback_data;
 
   callback_data.matches = NULL;
@@ -1595,6 +1602,7 @@ static PyObject* Rules_match(
   {
     if (filepath == NULL && data.buf == NULL && pid == -1)
     {
+      yr_scanner_destroy(scanner);
       return PyErr_Format(
           PyExc_TypeError,
           "match() takes at least one argument");
@@ -1605,6 +1613,7 @@ static PyObject* Rules_match(
       if (!PyCallable_Check(callback_data.callback))
       {
         PyBuffer_Release(&data);
+        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'callback' must be callable");
@@ -1616,6 +1625,7 @@ static PyObject* Rules_match(
       if (!PyCallable_Check(callback_data.modules_callback))
       {
         PyBuffer_Release(&data);
+        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_callback' must be callable");
@@ -1627,6 +1637,7 @@ static PyObject* Rules_match(
       if (!PyCallable_Check(callback_data.warnings_callback))
       {
         PyBuffer_Release(&data);
+        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'warnings_callback' must be callable");
@@ -1638,6 +1649,7 @@ static PyObject* Rules_match(
       if (!PyDict_Check(callback_data.modules_data))
       {
         PyBuffer_Release(&data);
+        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_data' must be a dictionary");
@@ -1648,18 +1660,17 @@ static PyObject* Rules_match(
     {
       if (PyDict_Check(externals))
       {
-        if (process_match_externals(externals, object->rules) != ERROR_SUCCESS)
+        if (process_match_externals(externals, scanner) != ERROR_SUCCESS)
         {
-          // Restore original externals provided during compiling.
-          process_match_externals(object->externals, object->rules);
-
           PyBuffer_Release(&data);
+          yr_scanner_destroy(scanner);
           return NULL;
         }
       }
       else
       {
         PyBuffer_Release(&data);
+        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'externals' must be a dictionary");
@@ -1668,8 +1679,14 @@ static PyObject* Rules_match(
 
     if (fast != NULL)
     {
-      fast_mode = (PyObject_IsTrue(fast) == 1);
+      if (PyObject_IsTrue(fast) == 1)
+      {
+        yr_scanner_set_flags(scanner, SCAN_FLAGS_FAST_MODE);
+      }
     }
+
+    yr_scanner_set_timeout(scanner, timeout);
+    yr_scanner_set_callback(scanner, yara_callback, &callback_data);
 
     if (filepath != NULL)
     {
@@ -1677,13 +1694,7 @@ static PyObject* Rules_match(
 
       Py_BEGIN_ALLOW_THREADS
 
-      error = yr_rules_scan_file(
-          object->rules,
-          filepath,
-          fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
-          yara_callback,
-          &callback_data,
-          timeout);
+      error = yr_scanner_scan_file(scanner, filepath);
 
       Py_END_ALLOW_THREADS
     }
@@ -1693,14 +1704,10 @@ static PyObject* Rules_match(
 
       Py_BEGIN_ALLOW_THREADS
 
-      error = yr_rules_scan_mem(
-          object->rules,
+      error = yr_scanner_scan_mem(
+          scanner,
           (unsigned char*) data.buf,
-          (size_t) data.len,
-          fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
-          yara_callback,
-          &callback_data,
-          timeout);
+          (size_t) data.len);
 
       Py_END_ALLOW_THREADS
     }
@@ -1710,29 +1717,13 @@ static PyObject* Rules_match(
 
       Py_BEGIN_ALLOW_THREADS
 
-      error = yr_rules_scan_proc(
-          object->rules,
-          pid,
-          fast_mode ? SCAN_FLAGS_FAST_MODE : 0,
-          yara_callback,
-          &callback_data,
-          timeout);
+      error = yr_scanner_scan_proc(scanner, pid);
 
       Py_END_ALLOW_THREADS
     }
 
     PyBuffer_Release(&data);
-
-    // Restore original externals provided during compiling.
-    if (object->externals != NULL)
-    {
-      if (process_match_externals(
-            object->externals, object->rules) != ERROR_SUCCESS)
-      {
-        Py_DECREF(callback_data.matches);
-        return NULL;
-      }
-    }
+    yr_scanner_destroy(scanner);
 
     if (error != ERROR_SUCCESS)
     {
