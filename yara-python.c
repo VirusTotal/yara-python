@@ -1567,13 +1567,6 @@ static PyObject* Rules_match(
 
   Rules* object = (Rules*) self;
 
-  YR_SCANNER* scanner;
-  if (yr_scanner_create(object->rules, &scanner) != 0) {
-      return PyErr_Format(
-          PyExc_Exception,
-          "could not create scanner");
-  }
-
   CALLBACK_DATA callback_data;
 
   callback_data.matches = NULL;
@@ -1602,7 +1595,6 @@ static PyObject* Rules_match(
   {
     if (filepath == NULL && data.buf == NULL && pid == -1)
     {
-      yr_scanner_destroy(scanner);
       return PyErr_Format(
           PyExc_TypeError,
           "match() takes at least one argument");
@@ -1613,7 +1605,6 @@ static PyObject* Rules_match(
       if (!PyCallable_Check(callback_data.callback))
       {
         PyBuffer_Release(&data);
-        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'callback' must be callable");
@@ -1625,7 +1616,6 @@ static PyObject* Rules_match(
       if (!PyCallable_Check(callback_data.modules_callback))
       {
         PyBuffer_Release(&data);
-        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_callback' must be callable");
@@ -1637,7 +1627,6 @@ static PyObject* Rules_match(
       if (!PyCallable_Check(callback_data.warnings_callback))
       {
         PyBuffer_Release(&data);
-        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'warnings_callback' must be callable");
@@ -1649,12 +1638,18 @@ static PyObject* Rules_match(
       if (!PyDict_Check(callback_data.modules_data))
       {
         PyBuffer_Release(&data);
-        yr_scanner_destroy(scanner);
         return PyErr_Format(
             PyExc_TypeError,
             "'modules_data' must be a dictionary");
       }
     }
+
+  YR_SCANNER* scanner;
+  if (yr_scanner_create(object->rules, &scanner) != 0) {
+      return PyErr_Format(
+          PyExc_Exception,
+          "could not create scanner");
+  }
 
     if (externals != NULL && externals != Py_None)
     {
@@ -1677,12 +1672,9 @@ static PyObject* Rules_match(
       }
     }
 
-    if (fast != NULL)
+    if (fast != NULL && PyObject_IsTrue(fast) == 1)
     {
-      if (PyObject_IsTrue(fast) == 1)
-      {
-        yr_scanner_set_flags(scanner, SCAN_FLAGS_FAST_MODE);
-      }
+      yr_scanner_set_flags(scanner, SCAN_FLAGS_FAST_MODE);
     }
 
     yr_scanner_set_timeout(scanner, timeout);
