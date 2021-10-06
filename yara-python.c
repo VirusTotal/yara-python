@@ -1567,6 +1567,7 @@ static PyObject* Rules_match(
 
   Rules* object = (Rules*) self;
 
+  YR_SCANNER* scanner;
   CALLBACK_DATA callback_data;
 
   callback_data.matches = NULL;
@@ -1644,12 +1645,12 @@ static PyObject* Rules_match(
       }
     }
 
-  YR_SCANNER* scanner;
-  if (yr_scanner_create(object->rules, &scanner) != 0) {
+    if (yr_scanner_create(object->rules, &scanner) != 0)
+    {
       return PyErr_Format(
           PyExc_Exception,
           "could not create scanner");
-  }
+    }
 
     if (externals != NULL && externals != Py_None)
     {
