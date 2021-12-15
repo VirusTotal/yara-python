@@ -936,6 +936,19 @@ class TestYara(unittest.TestCase):
         r = yara.compile(source='include "foo" rule r { condition: included }', include_callback=callback)
         self.assertTrue(r.match(data='dummy'))
 
+    def testConsoleCallback(self):
+        global called
+        called = False
+
+        def callback(message):
+            global called
+            called = True
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='import "console" rule r { condition: console.log("AXSERS") }')
+        r.match(data='dummy', console_callback=callback)
+        self.assertTrue(called)
+
     def testCompare(self):
 
         r = yara.compile(sources={

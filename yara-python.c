@@ -418,6 +418,7 @@ typedef struct _CALLBACK_DATA
   PyObject* modules_data;
   PyObject* modules_callback;
   PyObject* warnings_callback;
+  PyObject* console_callback;
   int which;
 
 } CALLBACK_DATA;
@@ -691,6 +692,55 @@ static int handle_module_imported(
 }
 
 
+static int handle_console_log(
+    void* message_data,
+    CALLBACK_DATA* data)
+{
+  PyGILState_STATE gil_state = PyGILState_Ensure();
+  int result = CALLBACK_CONTINUE;
+
+  if (data->console_callback == NULL)
+  {
+    // If the user does not specify a console callback we dump to stdout.
+    PySys_WriteStdout("%.1000s\n", (char*) message_data);
+  }
+  else
+  {
+    PyObject* log_string = PY_STRING((char*) message_data);
+    Py_INCREF(data->console_callback);
+
+    PyObject* callback_result = PyObject_CallFunctionObjArgs(
+        data->console_callback,
+        log_string,
+        NULL);
+
+    if (callback_result != NULL)
+    {
+      #if PY_MAJOR_VERSION >= 3
+      if (PyLong_Check(callback_result))
+      #else
+      if (PyLong_Check(callback_result) || PyInt_Check(callback_result))
+      #endif
+      {
+        result = (int) PyLong_AsLong(callback_result);
+      }
+    }
+    else
+    {
+      result = CALLBACK_ERROR;
+    }
+
+    Py_DECREF(log_string);
+    Py_XDECREF(callback_result);
+    Py_DECREF(data->console_callback);
+  }
+
+  PyGILState_Release(gil_state);
+
+  return result;
+}
+
+
 static int handle_too_many_matches(
     YR_SCAN_CONTEXT* context,
     YR_STRING* string,
@@ -870,6 +920,10 @@ int yara_callback(
     if (callback == NULL ||
         (which & CALLBACK_NON_MATCHES) != CALLBACK_NON_MATCHES)
       return CALLBACK_CONTINUE;
+    break;
+
+  case CALLBACK_MSG_CONSOLE_LOG:
+    return handle_console_log(message_data, user_data);
   }
 
   // At this point we have handled all the other cases of when this callback
@@ -1551,7 +1605,8 @@ static PyObject* Rules_match(
   static char* kwlist[] = {
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
-      "modules_callback", "which_callbacks", "warnings_callback", NULL
+      "modules_callback", "which_callbacks", "warnings_callback",
+      "console_callback", NULL
       };
 
   char* filepath = NULL;
@@ -1575,12 +1630,13 @@ static PyObject* Rules_match(
   callback_data.modules_data = NULL;
   callback_data.modules_callback = NULL;
   callback_data.warnings_callback = NULL;
+  callback_data.console_callback = NULL;
   callback_data.which = CALLBACK_ALL;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis*OOOiOOiO",
+        "|sis*OOOiOOiOO",
         kwlist,
         &filepath,
         &pid,
@@ -1592,7 +1648,8 @@ static PyObject* Rules_match(
         &callback_data.modules_data,
         &callback_data.modules_callback,
         &callback_data.which,
-        &callback_data.warnings_callback))
+        &callback_data.warnings_callback,
+        &callback_data.console_callback))
   {
     if (filepath == NULL && data.buf == NULL && pid == -1)
     {
@@ -1631,6 +1688,17 @@ static PyObject* Rules_match(
         return PyErr_Format(
             PyExc_TypeError,
             "'warnings_callback' must be callable");
+      }
+    }
+
+    if (callback_data.console_callback != NULL)
+    {
+      if (!PyCallable_Check(callback_data.console_callback))
+      {
+        PyBuffer_Release(&data);
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'console_callback' must be callable");
       }
     }
 
