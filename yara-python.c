@@ -702,6 +702,9 @@ static int handle_console_log(
   if (data->console_callback == NULL)
   {
     // If the user does not specify a console callback we dump to stdout.
+    // If we want to support 3.2 and newer only we can use
+    // https://docs.python.org/3/c-api/sys.html?highlight=stdout#c.PySys_FormatStdout
+    // instead of this call with the limit.
     PySys_WriteStdout("%.1000s\n", (char*) message_data);
   }
   else
