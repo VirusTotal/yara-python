@@ -758,6 +758,10 @@ class TestYara(unittest.TestCase):
             'rule test { condition: filesize == %d }' % len(PE32_FILE),
         ], PE32_FILE)
 
+    def testTooManyArguments(self):
+
+        self.assertRaises(TypeError, yara.compile, 'rules1.yar', 'rules2.yar')
+
     def testCompileFile(self):
 
         f = tempfile.TemporaryFile('wt')
