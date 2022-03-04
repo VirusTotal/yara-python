@@ -1560,7 +1560,6 @@ static PyObject* Rules_match(
   int pid = -1;
   int timeout = 0;
   int error = ERROR_SUCCESS;
-  int fast_mode = 0;
 
   PyObject* externals = NULL;
   PyObject* fast = NULL;
@@ -2129,6 +2128,27 @@ static PyObject* yara_compile(
         &error_on_warning,
         &include_callback))
   {
+    char num_args = 0;
+
+    if (filepath != NULL)
+      num_args++;
+
+    if (source != NULL)
+      num_args++;
+
+    if (file != NULL)
+      num_args++;
+
+    if (filepaths_dict != NULL)
+      num_args++;
+
+    if (sources_dict != NULL)
+      num_args++;
+
+    if (num_args > 1)
+      return PyErr_Format(
+          PyExc_TypeError,
+          "compile is receiving too many arguments");
 
     error = yr_compiler_create(&compiler);
 
