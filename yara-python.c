@@ -975,8 +975,25 @@ int yara_callback(
     else
       object = PY_STRING(meta->string);
 
-    PyDict_SetItemString(meta_list, meta->identifier, object);
-    Py_DECREF(object);
+    // Check if we already have an entry under this key
+    PyObject* existing_item = PyDict_GetItemString(meta_list, meta->identifier);
+    if (existing_item){
+      // If the type is an array, append item
+      if (PyList_Check(existing_item))
+        PyList_Append(existing_item, object);
+      else{
+        //Otherwise, instantiate array and append items
+        PyObject* new_list = PyList_New(0);
+        PyList_Append(new_list, existing_item);
+        PyList_Append(new_list, object);
+        PyDict_SetItemString(meta_list, meta->identifier, new_list);
+        Py_DECREF(new_list);
+      }
+    }
+    else{
+      PyDict_SetItemString(meta_list, meta->identifier, object);
+      Py_DECREF(object);
+    }
   }
 
   yr_rule_strings_foreach(rule, string)
@@ -1580,8 +1597,25 @@ static PyObject* Rules_next(
       else
         object = PY_STRING(meta->string);
 
-      PyDict_SetItemString(meta_list, meta->identifier, object);
-      Py_DECREF(object);
+      // Check if we already have an entry under this key
+      PyObject* existing_item = PyDict_GetItemString(meta_list, meta->identifier);
+      if (existing_item){
+        // If the type is an array, append item
+        if (PyList_Check(existing_item))
+          PyList_Append(existing_item, object);
+        else{
+          //Otherwise, instantiate array and append items
+          PyObject* new_list = PyList_New(0);
+          PyList_Append(new_list, existing_item);
+          PyList_Append(new_list, object);
+          PyDict_SetItemString(meta_list, meta->identifier, new_list);
+          Py_DECREF(new_list);
+        }
+      }
+      else{
+        PyDict_SetItemString(meta_list, meta->identifier, object);
+        Py_DECREF(object);
+      }
     }
 
     rule->global = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_GLOBAL);
