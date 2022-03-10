@@ -78,7 +78,7 @@ environment:
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
       VS: "Visual Studio 14 2015"
 
-    - PYTHON: "C:\\Python10-x64"
+    - PYTHON: "C:\\Python310-x64"
       PYTHON_VERSION: "3.10.0"
       PYTHON_ARCH: "64"
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
