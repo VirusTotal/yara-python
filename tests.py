@@ -1132,6 +1132,31 @@ class TestYara(unittest.TestCase):
         self.assertTrue(warnings_callback_message.rule == "x")
         self.assertTrue(warnings_callback_message.string == "$x")
 
+    def testCompilerErrorOnWarning(self):
+        # Make sure we always throw on warnings if requested, and that warnings
+        # are accumulated.
+
+        rules = """
+        rule a { strings: $a = "A" condition: $a }
+        rule b { strings: $b = "B" condition: $b }
+        """
+
+        expected = [
+            'line 2: string "$a" may slow down scanning',
+            'line 3: string "$b" may slow down scanning',
+        ]
+
+        with self.assertRaises(yara.WarningError) as ctx:
+            yara.compile(source=rules, error_on_warning=True)
+
+        e = ctx.exception
+        self.assertListEqual(e.warnings, expected)
+
+        # Now make sure the warnings member is set if error_on_warning is not
+        # set.
+        rules = yara.compile(source=rules)
+        self.assertListEqual(rules.warnings, expected)
+
 
 if __name__ == "__main__":
     unittest.main()
