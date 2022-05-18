@@ -316,6 +316,7 @@ typedef struct
 {
   PyObject_HEAD
   PyObject* externals;
+  PyObject* warnings;
   YR_RULES* rules;
   YR_RULE* iter_current_rule;
 } Rules;
@@ -346,6 +347,17 @@ static PyObject* Rules_getattro(
 
 static PyObject* Rules_next(
     PyObject* self);
+
+static PyMemberDef Rules_members[] = {
+  {
+    "warnings",
+    T_OBJECT_EX,
+    offsetof(Rules, warnings),
+    READONLY,
+    "List of compiler warnings"
+  },
+  { NULL } // End marker
+};
 
 static PyMethodDef Rules_methods[] =
 {
@@ -399,7 +411,7 @@ static PyTypeObject Rules_Type = {
   PyObject_SelfIter,          /* tp_iter */
   (iternextfunc) Rules_next,  /* tp_iternext */
   Rules_methods,              /* tp_methods */
-  0,                          /* tp_members */
+  Rules_members,              /* tp_members */
   0,                          /* tp_getset */
   0,                          /* tp_base */
   0,                          /* tp_dict */
@@ -1517,6 +1529,7 @@ static Rules* Rules_NEW(void)
   {
     rules->rules = NULL;
     rules->externals = NULL;
+    rules->warnings = NULL;
   }
 
   return rules;
@@ -1528,6 +1541,7 @@ static void Rules_dealloc(
   Rules* object = (Rules*) self;
 
   Py_XDECREF(object->externals);
+  Py_XDECREF(object->warnings);
 
   if (object->rules != NULL)
     yr_rules_destroy(object->rules);
@@ -2435,8 +2449,6 @@ static PyObject* yara_compile(
       PyErr_SetObject(YaraWarningError, warnings);
     }
 
-    Py_DECREF(warnings);
-
     if (PyErr_Occurred() == NULL)
     {
       rules = Rules_NEW();
@@ -2451,6 +2463,7 @@ static PyObject* yara_compile(
         {
           rules->rules = yara_rules;
           rules->iter_current_rule = rules->rules->rules_table;
+          rules->warnings = warnings;
 
           if (externals != NULL && externals != Py_None)
             rules->externals = PyDict_Copy(externals);
