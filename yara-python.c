@@ -420,6 +420,7 @@ typedef struct _CALLBACK_DATA
   PyObject* warnings_callback;
   PyObject* console_callback;
   int which;
+  bool allow_duplicate_metadata;
 
 } CALLBACK_DATA;
 
@@ -872,7 +873,6 @@ _exit:
 #define CALLBACK_MATCHES 0x01
 #define CALLBACK_NON_MATCHES 0x02
 #define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
-static bool CALLBACK_ALLOW_DUPLICATES = false;
 
 int yara_callback(
     YR_SCAN_CONTEXT* context,
@@ -975,8 +975,7 @@ int yara_callback(
     else
       object = PY_STRING(meta->string);
 
-
-    if (CALLBACK_ALLOW_DUPLICATES){
+    if (((CALLBACK_DATA*) user_data)->allow_duplicate_metadata){
       // Check if we already have an array under this key
       PyObject* existing_item = PyDict_GetItemString(meta_list, meta->identifier);
       // Append object to existing list
@@ -1637,8 +1636,6 @@ static PyObject* Rules_match(
   int timeout = 0;
   int error = ERROR_SUCCESS;
 
-  bool allow_duplicate_metadata = false;
-
   PyObject* externals = NULL;
   PyObject* fast = NULL;
 
@@ -1654,6 +1651,7 @@ static PyObject* Rules_match(
   callback_data.warnings_callback = NULL;
   callback_data.console_callback = NULL;
   callback_data.which = CALLBACK_ALL;
+  callback_data.allow_duplicate_metadata = false;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
@@ -1672,7 +1670,7 @@ static PyObject* Rules_match(
         &callback_data.which,
         &callback_data.warnings_callback,
         &callback_data.console_callback,
-        &allow_duplicate_metadata))
+        &callback_data.allow_duplicate_metadata))
   {
     if (filepath == NULL && data.buf == NULL && pid == -1)
     {
@@ -1736,8 +1734,8 @@ static PyObject* Rules_match(
       }
     }
 
-    if (allow_duplicate_metadata != NULL)
-      CALLBACK_ALLOW_DUPLICATES = allow_duplicate_metadata;
+    if (callback_data.allow_duplicate_metadata == NULL)
+      callback_data.allow_duplicate_metadata = false;
 
     if (yr_scanner_create(object->rules, &scanner) != 0)
     {

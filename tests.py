@@ -752,6 +752,28 @@ class TestYara(unittest.TestCase):
         self.assertTrue(meta['b'] == 'ñ')
         self.assertTrue(meta['c'] == 'ñ')
 
+    # This test is similar to testScanMeta but it tests for displaying multiple values in the meta data generated
+    # when a Match object is created (upon request).
+    def testDuplicateMeta(self):
+        r = yara.compile(source="""
+        rule test {
+            meta:
+                a = 1
+                a = 2
+                b = 3
+            condition:
+                true
+        }
+        """)
+
+        # Default behaviour should produce a simple KV map and should use the 'latest' metadata value per field
+        meta = r.match(data="dummy")[0].meta
+        self.assertTrue(meta['a'] == 2 and meta['b'] == 3)
+
+        # `allow_duplicate_metadata` flag should reveal all metadata values per field as a list
+        meta = r.match(data="dummy", allow_duplicate_metadata=True)[0].meta
+        self.assertTrue(meta['a'] == [1, 2] and meta['b'] == [3])
+
     def testFilesize(self):
 
         self.assertTrueRules([
