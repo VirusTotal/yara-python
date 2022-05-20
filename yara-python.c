@@ -432,6 +432,7 @@ typedef struct _CALLBACK_DATA
   PyObject* warnings_callback;
   PyObject* console_callback;
   int which;
+  bool allow_duplicate_metadata;
 
 } CALLBACK_DATA;
 
@@ -885,7 +886,6 @@ _exit:
 #define CALLBACK_NON_MATCHES 0x02
 #define CALLBACK_ALL CALLBACK_MATCHES | CALLBACK_NON_MATCHES
 
-
 int yara_callback(
     YR_SCAN_CONTEXT* context,
     int message,
@@ -987,8 +987,24 @@ int yara_callback(
     else
       object = PY_STRING(meta->string);
 
-    PyDict_SetItemString(meta_list, meta->identifier, object);
-    Py_DECREF(object);
+    if (((CALLBACK_DATA*) user_data)->allow_duplicate_metadata){
+      // Check if we already have an array under this key
+      PyObject* existing_item = PyDict_GetItemString(meta_list, meta->identifier);
+      // Append object to existing list
+      if (existing_item)
+        PyList_Append(existing_item, object);
+      else{
+        //Otherwise, instantiate array and append object as first item
+        PyObject* new_list = PyList_New(0);
+        PyList_Append(new_list, object);
+        PyDict_SetItemString(meta_list, meta->identifier, new_list);
+        Py_DECREF(new_list);
+      }
+    }
+    else{
+      PyDict_SetItemString(meta_list, meta->identifier, object);
+      Py_DECREF(object);
+    }
   }
 
   yr_rule_strings_foreach(rule, string)
@@ -1594,8 +1610,9 @@ static PyObject* Rules_next(
       else
         object = PY_STRING(meta->string);
 
-      PyDict_SetItemString(meta_list, meta->identifier, object);
-      Py_DECREF(object);
+        PyDict_SetItemString(meta_list, meta->identifier, object);
+        Py_DECREF(object);
+
     }
 
     rule->global = PyBool_FromLong(rules->iter_current_rule->flags & RULE_FLAGS_GLOBAL);
@@ -1623,7 +1640,7 @@ static PyObject* Rules_match(
       "filepath", "pid", "data", "externals",
       "callback", "fast", "timeout", "modules_data",
       "modules_callback", "which_callbacks", "warnings_callback",
-      "console_callback", NULL
+      "console_callback", "allow_duplicate_metadata", NULL
       };
 
   char* filepath = NULL;
@@ -1648,11 +1665,12 @@ static PyObject* Rules_match(
   callback_data.warnings_callback = NULL;
   callback_data.console_callback = NULL;
   callback_data.which = CALLBACK_ALL;
+  callback_data.allow_duplicate_metadata = false;
 
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|sis*OOOiOOiOO",
+        "|sis*OOOiOOiOOb",
         kwlist,
         &filepath,
         &pid,
@@ -1665,7 +1683,8 @@ static PyObject* Rules_match(
         &callback_data.modules_callback,
         &callback_data.which,
         &callback_data.warnings_callback,
-        &callback_data.console_callback))
+        &callback_data.console_callback,
+        &callback_data.allow_duplicate_metadata))
   {
     if (filepath == NULL && data.buf == NULL && pid == -1)
     {
@@ -1728,6 +1747,9 @@ static PyObject* Rules_match(
             "'modules_data' must be a dictionary");
       }
     }
+
+    if (callback_data.allow_duplicate_metadata == NULL)
+      callback_data.allow_duplicate_metadata = false;
 
     if (yr_scanner_create(object->rules, &scanner) != 0)
     {
