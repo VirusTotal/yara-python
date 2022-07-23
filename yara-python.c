@@ -1014,10 +1014,11 @@ int yara_callback(
       object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
 
       tuple = Py_BuildValue(
-          "(L,s,O)",
+          "(L,s,O,b)",
           m->base + m->offset,
           string->identifier,
-          object);
+          object,
+          m->xor_key);
 
       PyList_Append(string_list, tuple);
 

@@ -306,7 +306,7 @@ class TestYara(unittest.TestCase):
             matches = rule.match(data=string)
             if expected_result == SUCCEED:
                 self.assertTrue(matches)
-                _, _, matching_string = matches[0].strings[0]
+                (_, _, matching_string, _) = matches[0].strings[0]
                 if sys.version_info[0] >= 3:
                     self.assertTrue(matching_string == bytes(test[3], 'utf-8'))
                 else:
@@ -559,9 +559,9 @@ class TestYara(unittest.TestCase):
         matches = rules.match(data='abbb')
 
         if sys.version_info[0] >= 3:
-            self.assertTrue(matches[0].strings == [(0, '$a', bytes('ab', 'utf-8'))])
+            self.assertTrue(matches[0].strings == [(0, '$a', bytes('ab', 'utf-8'), 0)])
         else:
-            self.assertTrue(matches[0].strings == [(0, '$a', 'ab')])
+            self.assertTrue(matches[0].strings == [(0, '$a', 'ab', 0)])
 
     def testCount(self):
 
@@ -649,6 +649,27 @@ class TestYara(unittest.TestCase):
         self.assertFalseRules([
             'rule test { strings: $a = "ssi" condition: for all i in (1..#a) : (@a[i] == 5) }',
         ], 'mississipi')
+
+    def testXorKey(self):
+
+        global rule_data
+        rule_data = None
+
+        def callback(data):
+            global rule_data
+            rule_data = data
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='rule test { strings: $a = "dummy" xor(1-2) condition: $a }')
+        r.match(data='etllxfwoo{', callback=callback)
+
+        self.assertTrue(rule_data['matches'])
+        self.assertTrue(rule_data['rule'] == 'test')
+        self.assertTrue(len(rule_data['strings']) == 2)
+        (_, _, _, xor_key) = rule_data['strings'][0]
+        self.assertEqual(xor_key, 1)
+        (_, _, _, xor_key) = rule_data['strings'][1]
+        self.assertEqual(xor_key, 2)
 
     def testRE(self):
 
