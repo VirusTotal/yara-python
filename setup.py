@@ -350,7 +350,7 @@ with open('README.rst', 'r', 'utf-8') as f:
 
 setup(
     name='yara-python',
-    version='4.2.0',
+    version='4.2.3',
     description='Python interface for YARA',
     long_description=readme,
     license='Apache 2.0',
