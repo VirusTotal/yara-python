@@ -699,6 +699,14 @@ class TestYara(unittest.TestCase):
         self.assertEqual(len(rule_data['strings']), 1)
         self.assertEqual(rule_data['strings'][0].instances[0].xor_key, 0)
 
+    def testMatchedLength(self):
+        yara.set_config(max_match_data=2)
+        r = yara.compile(source='rule test { strings: $a = "dummy" condition: $a }')
+        matches  = r.match(data='dummy')
+        self.assertEqual(matches[0].strings[0].instances[0].matched_length, 5)
+        self.assertEqual(matches[0].strings[0].instances[0].matched_data, b'du')
+        yara.set_config(max_match_data=512)
+
     def testRE(self):
 
         self.assertTrueRules([

@@ -318,6 +318,7 @@ typedef struct
   PyObject_HEAD
   PyObject* offset;
   PyObject* matched_data;
+  PyObject* matched_length;
   PyObject* xor_key;
 } StringMatchInstance;
 
@@ -337,6 +338,13 @@ static PyMemberDef StringMatchInstance_members[] = {
     "Matched data"
   },
   {
+    "matched_length",
+    T_OBJECT_EX,
+    offsetof(StringMatchInstance, matched_length),
+    READONLY,
+    "Length of matched data"
+  },
+  {
     "xor_key",
     T_OBJECT_EX,
     offsetof(StringMatchInstance, xor_key),
@@ -349,6 +357,7 @@ static PyMemberDef StringMatchInstance_members[] = {
 static PyObject* StringMatchInstance_NEW(
     uint64_t offset,
     PyObject* matched_data,
+    int32_t match_length,
     uint8_t xor_key);
 
 static void StringMatchInstance_dealloc(
@@ -1244,6 +1253,7 @@ int yara_callback(
       string_match_instance = StringMatchInstance_NEW(
           m->base + m->offset,
           object,
+          m->match_length,
           m->xor_key);
       if (string_match_instance == NULL)
         return PyErr_Format(PyExc_TypeError, "Out of memory");
@@ -1834,6 +1844,7 @@ static PyObject* StringMatch_is_xor(
 static PyObject* StringMatchInstance_NEW(
     uint64_t offset,
     PyObject* matched_data,
+    int32_t match_length,
     uint8_t xor_key)
 {
   StringMatchInstance* object = PyObject_NEW(StringMatchInstance, &StringMatchInstance_Type);
@@ -1842,7 +1853,8 @@ static PyObject* StringMatchInstance_NEW(
   {
     object->offset = PyLong_FromLongLong(offset);
     object->matched_data = matched_data;
-    object->xor_key = PyLong_FromLongLong((uint64_t) xor_key);
+    object->matched_length = PyLong_FromLong(match_length);
+    object->xor_key = PyLong_FromUnsignedLong((uint32_t) xor_key);
 
     Py_INCREF(matched_data);
   }
