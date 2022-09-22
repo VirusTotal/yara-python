@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2007-2013. The YARA Authors. All Rights Reserved.
+Copyright (c) 2007-2022. The YARA Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ static PyObject* YaraWarningError = NULL;
 This module allows you to apply YARA rules to files or strings.\n\
 \n\
 For complete documentation please visit:\n\
-https://plusvic.github.io/yara\n"
+https://yara.readthedocs.io/en/stable/yarapython.html\n"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <string.h>
