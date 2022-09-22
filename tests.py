@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2007-2021. The YARA Authors. All Rights Reserved.
+# Copyright (c) 2007-2022. The YARA Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
