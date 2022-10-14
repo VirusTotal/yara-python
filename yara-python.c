@@ -2762,6 +2762,29 @@ MOD_INIT(yara)
     return MOD_ERROR_VAL;
   }
 
+  PyObject* module_names_list = PyList_New(0);
+  if (module_names_list == NULL)
+  {
+    PyErr_SetString(YaraError, "module list error");
+    return MOD_ERROR_VAL;
+  }
+
+  for (YR_MODULE* module = yr_modules_get_table(); module->name != NULL; module++)
+  {
+    PyObject* module_name = PY_STRING(module->name);
+    if (module_name == NULL)
+    {
+      PyErr_SetString(YaraError, "module name error");
+      return MOD_ERROR_VAL;
+    }
+    if (PyList_Append(module_names_list, module_name) < 0)
+    {
+      PyErr_SetString(YaraError, "module name error");
+      return MOD_ERROR_VAL;
+    }
+  }
+  PyModule_AddObject(m, "modules", module_names_list);
+
   Py_AtExit(finalize);
 
   return MOD_SUCCESS_VAL(m);
