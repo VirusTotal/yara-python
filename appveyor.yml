@@ -155,7 +155,7 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-dotnet
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../openssl/lib
     -I../jansson-%JANSSON_VERSION%/build/include;../openssl/include
-    -DHASH_MODULE,HAVE_LIBCRYPTO,-DBUCKETS_128=1,-DCHECKSUM_1B=1
+    -DHASH_MODULE,HAVE_LIBCRYPTO,BUCKETS_128,CHECKSUM_1B
     -llibcrypto"
 
 after_build:
