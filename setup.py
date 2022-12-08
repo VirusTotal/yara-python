@@ -377,4 +377,5 @@ setup(
     ext_modules=[Extension(
         name='yara',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
+        define_macros=[('BUCKETS_128', 1), ('CHECKSUM_1B', 1)],
         sources=['yara-python.c'])])
