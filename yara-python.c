@@ -205,6 +205,231 @@ static PyTypeObject Match_Type = {
   0,                          /* tp_new */
 };
 
+// StringMatch object
+
+typedef struct
+{
+  PyObject_HEAD
+  PyObject* identifier;
+  PyObject* instances;
+  // This is not exposed directly because it contains flags that are internal
+  // to yara (eg: STRING_FLAGS_FITS_IN_ATOM) along with modifiers
+  // (eg: STRING_FLAGS_XOR).
+  uint64_t flags;
+} StringMatch;
+
+static PyMemberDef StringMatch_members[] = {
+  {
+    "identifier",
+    T_OBJECT_EX,
+    offsetof(StringMatch, identifier),
+    READONLY,
+    "Name of the matching string"
+  },
+  {
+    "instances",
+    T_OBJECT_EX,
+    offsetof(StringMatch, instances),
+    READONLY,
+    "StringMatchInstance objects of the matching string"
+  },
+  { NULL } // End marker
+};
+
+static PyObject* StringMatch_NEW(
+    const char* identifier,
+    uint64_t flags,
+    PyObject* instance_list);
+
+static void StringMatch_dealloc(
+  PyObject* self);
+
+static PyObject* StringMatch_repr(
+    PyObject* self);
+
+static PyObject* StringMatch_getattro(
+    PyObject* self,
+    PyObject* name);
+
+static Py_hash_t StringMatch_hash(
+    PyObject* self);
+
+static PyObject* StringMatch_is_xor(
+    PyObject* self,
+    PyObject* args);
+
+
+static PyMethodDef StringMatch_methods[] =
+{
+  {
+    "is_xor",
+    (PyCFunction) StringMatch_is_xor,
+    METH_NOARGS,
+    "Return true if a string has the xor modifier"
+  },
+  { NULL },
+};
+
+static PyTypeObject StringMatch_Type = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+  "yara.StringMatch",               /*tp_name*/
+  sizeof(StringMatch),              /*tp_basicsize*/
+  0,                                /*tp_itemsize*/
+  (destructor)StringMatch_dealloc,  /*tp_dealloc*/
+  0,                                /*tp_print*/
+  0,                                /*tp_getattr*/
+  0,                                /*tp_setattr*/
+  0,                                /*tp_compare*/
+  StringMatch_repr,                 /*tp_repr*/
+  0,                                /*tp_as_number*/
+  0,                                /*tp_as_sequence*/
+  0,                                /*tp_as_mapping*/
+  StringMatch_hash,                 /*tp_hash */
+  0,                                /*tp_call*/
+  0,                                /*tp_str*/
+  StringMatch_getattro,             /*tp_getattro*/
+  0,                                /*tp_setattro*/
+  0,                                /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  "StringMatch class",              /* tp_doc */
+  0,                                /* tp_traverse */
+  0,                                /* tp_clear */
+  0,                                /* tp_richcompare */ // XXX: Implement richcompare?
+  0,                                /* tp_weaklistoffset */
+  0,                                /* tp_iter */
+  0,                                /* tp_iternext */
+  StringMatch_methods,              /* tp_methods */
+  StringMatch_members,              /* tp_members */
+  0,                                /* tp_getset */
+  0,                                /* tp_base */
+  0,                                /* tp_dict */
+  0,                                /* tp_descr_get */
+  0,                                /* tp_descr_set */
+  0,                                /* tp_dictoffset */
+  0,                                /* tp_init */
+  0,                                /* tp_alloc */
+  0,                                /* tp_new */
+};
+
+// StringMatchInstance object
+
+typedef struct
+{
+  PyObject_HEAD
+  PyObject* offset;
+  PyObject* matched_data;
+  PyObject* matched_length;
+  PyObject* xor_key;
+} StringMatchInstance;
+
+static PyMemberDef StringMatchInstance_members[] = {
+  {
+    "offset",
+    T_OBJECT_EX,
+    offsetof(StringMatchInstance, offset),
+    READONLY,
+    "Offset of the matched data"
+  },
+  {
+    "matched_data",
+    T_OBJECT_EX,
+    offsetof(StringMatchInstance, matched_data),
+    READONLY,
+    "Matched data"
+  },
+  {
+    "matched_length",
+    T_OBJECT_EX,
+    offsetof(StringMatchInstance, matched_length),
+    READONLY,
+    "Length of matched data"
+  },
+  {
+    "xor_key",
+    T_OBJECT_EX,
+    offsetof(StringMatchInstance, xor_key),
+    READONLY,
+    "XOR key found for xor strings"
+  },
+  { NULL } // End marker
+};
+
+static PyObject* StringMatchInstance_NEW(
+    uint64_t offset,
+    PyObject* matched_data,
+    int32_t match_length,
+    uint8_t xor_key);
+
+static void StringMatchInstance_dealloc(
+  PyObject* self);
+
+static PyObject* StringMatchInstance_repr(
+    PyObject* self);
+
+static PyObject* StringMatchInstance_getattro(
+    PyObject* self,
+    PyObject* name);
+
+static Py_hash_t StringMatchInstance_hash(
+    PyObject* self);
+
+static PyObject* StringMatchInstance_plaintext(
+    PyObject* self,
+    PyObject* args);
+
+
+static PyMethodDef StringMatchInstance_methods[] =
+{
+  {
+    "plaintext",
+    (PyCFunction) StringMatchInstance_plaintext,
+    METH_NOARGS,
+    "Return matched data after xor key applied."
+  },
+  { NULL },
+};
+
+static PyTypeObject StringMatchInstance_Type = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+  "yara.StringMatchInstance",               /*tp_name*/
+  sizeof(StringMatchInstance),              /*tp_basicsize*/
+  0,                                        /*tp_itemsize*/
+  (destructor)StringMatchInstance_dealloc,  /*tp_dealloc*/
+  0,                                        /*tp_print*/
+  0,                                        /*tp_getattr*/
+  0,                                        /*tp_setattr*/
+  0,                                        /*tp_compare*/
+  StringMatchInstance_repr,                 /*tp_repr*/
+  0,                                        /*tp_as_number*/
+  0,                                        /*tp_as_sequence*/
+  0,                                        /*tp_as_mapping*/
+  StringMatchInstance_hash,                 /*tp_hash */
+  0,                                        /*tp_call*/
+  0,                                        /*tp_str*/
+  StringMatchInstance_getattro,             /*tp_getattro*/
+  0,                                        /*tp_setattro*/
+  0,                                        /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  "StringMatchInstance class",              /* tp_doc */
+  0,                                        /* tp_traverse */
+  0,                                        /* tp_clear */
+  0,                                        /* tp_richcompare */ // XXX: Implement richcompare?
+  0,                                        /* tp_weaklistoffset */
+  0,                                        /* tp_iter */
+  0,                                        /* tp_iternext */
+  StringMatchInstance_methods,              /* tp_methods */
+  StringMatchInstance_members,              /* tp_members */
+  0,                                        /* tp_getset */
+  0,                                        /* tp_base */
+  0,                                        /* tp_dict */
+  0,                                        /* tp_descr_get */
+  0,                                        /* tp_descr_set */
+  0,                                        /* tp_dictoffset */
+  0,                                        /* tp_init */
+  0,                                        /* tp_alloc */
+  0,                                        /* tp_new */
+};
+
 // Rule object
 
 typedef struct
@@ -900,12 +1125,13 @@ int yara_callback(
   const char* tag;
 
   PyObject* tag_list = NULL;
+  PyObject* string_instance_list = NULL;
   PyObject* string_list = NULL;
   PyObject* meta_list = NULL;
+  PyObject* string_match_instance = NULL;
   PyObject* match;
   PyObject* callback_dict;
   PyObject* object;
-  PyObject* tuple;
   PyObject* matches = ((CALLBACK_DATA*) user_data)->matches;
   PyObject* callback = ((CALLBACK_DATA*) user_data)->callback;
   PyObject* callback_result;
@@ -1009,21 +1235,45 @@ int yara_callback(
 
   yr_rule_strings_foreach(rule, string)
   {
+    // If this string is not a match, skip it. We have to check for this here
+    // and not rely on it in yr_string_matches_foreach macro because we need
+    // to create the string match instance list before we make the items that
+    // go in it.
+    if (context->matches[string->idx].head == NULL)
+      continue;
+
+    string_instance_list = PyList_New(0);
+    if (string_instance_list == NULL)
+      return PyErr_Format(PyExc_TypeError, "Out of memory");
+
     yr_string_matches_foreach(context, string, m)
     {
       object = PyBytes_FromStringAndSize((char*) m->data, m->data_length);
 
-      tuple = Py_BuildValue(
-          "(L,s,O)",
+      string_match_instance = StringMatchInstance_NEW(
           m->base + m->offset,
-          string->identifier,
-          object);
+          object,
+          m->match_length,
+          m->xor_key);
+      if (string_match_instance == NULL)
+        return PyErr_Format(PyExc_TypeError, "Out of memory");
 
-      PyList_Append(string_list, tuple);
+      PyList_Append(string_instance_list, string_match_instance);
 
       Py_DECREF(object);
-      Py_DECREF(tuple);
+      Py_DECREF(string_match_instance);
     }
+
+    object = StringMatch_NEW(
+        string->identifier,
+        string->flags,
+        string_instance_list);
+    if (object == NULL)
+      return PyErr_Format(PyExc_TypeError, "Out of memory");
+    Py_DECREF(string_instance_list);
+
+    PyList_Append(string_list, object);
+    Py_DECREF(object);
   }
 
   if (message == CALLBACK_MSG_RULE_MATCHING)
@@ -1513,6 +1763,176 @@ static Py_hash_t Match_hash(
   Match* match = (Match*) self;
   return PyObject_Hash(match->rule) + PyObject_Hash(match->ns);
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+static PyObject* StringMatch_NEW(
+    const char* identifier,
+    uint64_t flags,
+    PyObject* instance_list)
+{
+  StringMatch* object = PyObject_NEW(StringMatch, &StringMatch_Type);
+
+  if (object != NULL)
+  {
+    object->identifier = PY_STRING(identifier);
+    object->flags = flags;
+    object->instances = instance_list;
+
+    Py_INCREF(instance_list);
+  }
+
+  return (PyObject*) object;
+}
+
+
+static void StringMatch_dealloc(
+    PyObject* self)
+{
+  StringMatch* object = (StringMatch*) self;
+
+  Py_DECREF(object->identifier);
+  Py_DECREF(object->instances);
+
+  PyObject_Del(self);
+}
+
+
+static PyObject* StringMatch_repr(
+    PyObject* self)
+{
+  StringMatch* object = (StringMatch*) self;
+  Py_INCREF(object->identifier);
+  return object->identifier;
+}
+
+
+static PyObject* StringMatch_getattro(
+    PyObject* self,
+    PyObject* name)
+{
+  return PyObject_GenericGetAttr(self, name);
+}
+
+
+// Hashing on just identifiers can be tricky as there can be duplicate
+// identifiers between rules and there are anonymous strings too. Be careful
+// when using this!
+static Py_hash_t StringMatch_hash(
+    PyObject* self)
+{
+  return PyObject_Hash(((StringMatch*) self)->identifier);
+}
+
+
+static PyObject* StringMatch_is_xor(
+    PyObject* self,
+    PyObject* args)
+{
+  if (((StringMatch*) self)->flags & STRING_FLAGS_XOR)
+    Py_RETURN_TRUE;
+
+  Py_RETURN_FALSE;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+static PyObject* StringMatchInstance_NEW(
+    uint64_t offset,
+    PyObject* matched_data,
+    int32_t match_length,
+    uint8_t xor_key)
+{
+  StringMatchInstance* object = PyObject_NEW(StringMatchInstance, &StringMatchInstance_Type);
+
+  if (object != NULL)
+  {
+    object->offset = PyLong_FromLongLong(offset);
+    object->matched_data = matched_data;
+    object->matched_length = PyLong_FromLong(match_length);
+    object->xor_key = PyLong_FromUnsignedLong((uint32_t) xor_key);
+
+    Py_INCREF(matched_data);
+  }
+
+  return (PyObject*) object;
+}
+
+
+static void StringMatchInstance_dealloc(
+    PyObject* self)
+{
+  StringMatchInstance* object = (StringMatchInstance*) self;
+
+  Py_DECREF(object->offset);
+  Py_DECREF(object->matched_data);
+  Py_DECREF(object->xor_key);
+
+  PyObject_Del(self);
+}
+
+
+static PyObject* StringMatchInstance_repr(
+    PyObject* self)
+{
+  StringMatchInstance* object = (StringMatchInstance*) self;
+  return PyCodec_Decode(object->matched_data, "utf-8", "backslashreplace");
+}
+
+
+static PyObject* StringMatchInstance_getattro(
+    PyObject* self,
+    PyObject* name)
+{
+  return PyObject_GenericGetAttr(self, name);
+}
+
+
+static Py_hash_t StringMatchInstance_hash(
+    PyObject* self)
+{
+  return PyObject_Hash(((StringMatchInstance*) self)->matched_data);
+}
+
+
+static PyObject* StringMatchInstance_plaintext(
+    PyObject* self,
+    PyObject* args)
+{
+  char* pb;
+  Py_ssize_t length;
+
+  StringMatchInstance* instance = (StringMatchInstance*) self;
+  uint64_t xor_key = PyLong_AsUnsignedLongLong(instance->xor_key);
+  if (xor_key == 0)
+      return instance->matched_data;
+
+  int result = PyBytes_AsStringAndSize(instance->matched_data, &pb, &length);
+  if (result == -1)
+    return NULL;
+
+  // pb points to an internal buffer of the bytes object which we can not
+  // modify. Allocate a new buffer, copy the contents over and do the xor, then
+  // create a new bytes object to return.
+  uint8_t* buf = (uint8_t*) calloc(length, sizeof(uint8_t));
+  if (buf == NULL)
+    return PyErr_Format(PyExc_TypeError, "Out of memory");
+
+  memcpy(buf, pb, length);
+  for (size_t i = 0; i < length; i++) {
+    buf[i] = ((uint8_t) pb[i]) ^ xor_key;
+  }
+
+  PyObject* object = PyBytes_FromStringAndSize((char*) buf, length);
+  free(buf);
+
+  return object;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2745,11 +3165,19 @@ MOD_INIT(yara)
   if (PyType_Ready(&Match_Type) < 0)
     return MOD_ERROR_VAL;
 
+  if (PyType_Ready(&StringMatch_Type) < 0)
+    return MOD_ERROR_VAL;
+
+  if (PyType_Ready(&StringMatchInstance_Type) < 0)
+    return MOD_ERROR_VAL;
+
   PyStructSequence_InitType(&RuleString_Type, &RuleString_Desc);
 
   PyModule_AddObject(m, "Rule", (PyObject*) &Rule_Type);
   PyModule_AddObject(m, "Rules", (PyObject*) &Rules_Type);
   PyModule_AddObject(m, "Match",  (PyObject*) &Match_Type);
+  PyModule_AddObject(m, "StringMatch",  (PyObject*) &StringMatch_Type);
+  PyModule_AddObject(m, "StringMatchInstance",  (PyObject*) &StringMatchInstance_Type);
 
   PyModule_AddObject(m, "Error", YaraError);
   PyModule_AddObject(m, "SyntaxError", YaraSyntaxError);
