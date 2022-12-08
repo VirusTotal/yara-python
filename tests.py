@@ -718,8 +718,8 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = /(M|N)iss/ nocase condition: $a }',
             'rule test { strings: $a = /[M-N]iss/ nocase condition: $a }',
             'rule test { strings: $a = /(Mi|ssi)ssippi/ nocase condition: $a }',
-            'rule test { strings: $a = /ppi\tmi/ condition: $a }',
-            r'rule test { strings: $a = /ppi\.mi/ condition: $a }',
+            r'rule test { strings: $a = /ppi\tmi/ condition: $a }',
+            'rule test { strings: $a = /ppi\.mi/ condition: $a }',
             'rule test { strings: $a = /^mississippi/ fullword condition: $a }',
             'rule test { strings: $a = /mississippi.*mississippi$/s condition: $a }',
         ], 'mississippi\tmississippi.mississippi\nmississippi')
