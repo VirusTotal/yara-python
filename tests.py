@@ -306,11 +306,12 @@ class TestYara(unittest.TestCase):
             matches = rule.match(data=string)
             if expected_result == SUCCEED:
                 self.assertTrue(matches)
-                _, _, matching_string = matches[0].strings[0]
+                matching_string = matches[0].strings[0]
+                instance = matching_string.instances[0]
                 if sys.version_info[0] >= 3:
-                    self.assertTrue(matching_string == bytes(test[3], 'utf-8'))
+                    self.assertTrue(instance.matched_data == bytes(test[3], 'utf-8'))
                 else:
-                    self.assertTrue(matching_string == test[3])
+                    self.assertTrue(instance.matched_data == test[3])
             else:
                 self.assertFalse(matches)
 
@@ -559,9 +560,13 @@ class TestYara(unittest.TestCase):
         matches = rules.match(data='abbb')
 
         if sys.version_info[0] >= 3:
-            self.assertTrue(matches[0].strings == [(0, '$a', bytes('ab', 'utf-8'))])
+            self.assertTrue(matches[0].strings[0].identifier == '$a')
+            self.assertTrue(matches[0].strings[0].instances[0].offset == 0)
+            self.assertTrue(matches[0].strings[0].instances[0].matched_data == bytes('ab', 'utf-8'))
         else:
-            self.assertTrue(matches[0].strings == [(0, '$a', 'ab')])
+            self.assertTrue(matches[0].strings[0].identifier == '$a')
+            self.assertTrue(matches[0].strings[0].instances[0].offset == 0)
+            self.assertTrue(matches[0].strings[0].instances[0].matched_data == 'ab')
 
     def testCount(self):
 
@@ -650,6 +655,58 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = "ssi" condition: for all i in (1..#a) : (@a[i] == 5) }',
         ], 'mississipi')
 
+    def testXorKey(self):
+
+        global rule_data
+        rule_data = None
+
+        def callback(data):
+            global rule_data
+            rule_data = data
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='rule test { strings: $a = "dummy" xor(1-2) condition: $a }')
+        r.match(data='etllxfwoo{', callback=callback)
+
+        self.assertTrue(rule_data['matches'])
+        self.assertEqual(rule_data['rule'], 'test')
+        self.assertEqual(len(rule_data['strings']), 1)
+        string = rule_data['strings'][0]
+        self.assertEqual(len(string.instances), 2)
+        self.assertEqual(string.instances[0].xor_key, 1)
+        self.assertEqual(string.instances[1].xor_key, 2)
+
+        # Make sure plaintext() works.
+        self.assertTrue(string.instances[0].plaintext() == b'dummy')
+
+    # Test that the xor_key for matched strings is 0 if the string is not an xor
+    # string. We always want to make sure this is set!
+    def testXorKeyNoXorString(self):
+
+        global rule_data
+        rule_data = None
+
+        def callback(data):
+            global rule_data
+            rule_data = data
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='rule test { strings: $a = "dummy" condition: $a }')
+        r.match(data='dummy', callback=callback)
+
+        self.assertTrue(rule_data['matches'])
+        self.assertEqual(rule_data['rule'],'test')
+        self.assertEqual(len(rule_data['strings']), 1)
+        self.assertEqual(rule_data['strings'][0].instances[0].xor_key, 0)
+
+    def testMatchedLength(self):
+        yara.set_config(max_match_data=2)
+        r = yara.compile(source='rule test { strings: $a = "dummy" condition: $a }')
+        matches  = r.match(data='dummy')
+        self.assertEqual(matches[0].strings[0].instances[0].matched_length, 5)
+        self.assertEqual(matches[0].strings[0].instances[0].matched_data, b'du')
+        yara.set_config(max_match_data=512)
+
     def testRE(self):
 
         self.assertTrueRules([
@@ -661,8 +718,8 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = /(M|N)iss/ nocase condition: $a }',
             'rule test { strings: $a = /[M-N]iss/ nocase condition: $a }',
             'rule test { strings: $a = /(Mi|ssi)ssippi/ nocase condition: $a }',
-            'rule test { strings: $a = /ppi\tmi/ condition: $a }',
-            r'rule test { strings: $a = /ppi\.mi/ condition: $a }',
+            r'rule test { strings: $a = /ppi\tmi/ condition: $a }',
+            'rule test { strings: $a = /ppi\.mi/ condition: $a }',
             'rule test { strings: $a = /^mississippi/ fullword condition: $a }',
             'rule test { strings: $a = /mississippi.*mississippi$/s condition: $a }',
         ], 'mississippi\tmississippi.mississippi\nmississippi')

@@ -188,6 +188,12 @@ class BuildExtCommand(build_ext):
 
     exclusions = []
 
+    # Needed to build tlsh
+    module.define_macros.extend([('BUCKETS_128', 1), ('CHECKSUM_1B', 1)])
+
+    # Needed to build authenticode parser
+    module.libraries.append('ssl')
+
     for define in self.define or []:
       module.define_macros.append(define)
 
@@ -371,4 +377,5 @@ setup(
     ext_modules=[Extension(
         name='yara',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
+        define_macros=[('BUCKETS_128', 1), ('CHECKSUM_1B', 1)],
         sources=['yara-python.c'])])
