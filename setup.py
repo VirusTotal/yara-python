@@ -275,27 +275,32 @@ class BuildExtCommand(build_ext):
     if self.dynamic_linking:
       module.libraries.append('yara')
     else:
-      if not self.define or not ('HASH_MODULE', '1') in self.define:
-        if (has_function('OpenSSL_add_all_algorithms',
-                         includes=['openssl/evp.h'],
-                         include_dirs=module.include_dirs + openssl_include_dirs,
-                         libraries=module.libraries + openssl_libraries,
-                         library_dirs=module.library_dirs + openssl_library_dirs)
-            # In case OpenSSL is being linked statically
-            or has_function('OpenSSL_add_all_algorithms',
-                         includes=['openssl/evp.h'],
-                         include_dirs=module.include_dirs + openssl_include_dirs,
-                         libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
-                         library_dirs=module.library_dirs + openssl_library_dirs)
-            ):
-          module.define_macros.append(('HASH_MODULE', '1'))
-          module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
-          module.libraries.append('crypto')
-        elif building_for_windows:
-          module.define_macros.append(('HASH_MODULE', '1'))
-          module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
-        else:
-          exclusions.append('yara/libyara/modules/hash/hash.c')
+      # Is OpenSSL available?
+      if (has_function('OpenSSL_add_all_algorithms',
+                       includes=['openssl/evp.h'],
+                       include_dirs=module.include_dirs + openssl_include_dirs,
+                       libraries=module.libraries + openssl_libraries,
+                       library_dirs=module.library_dirs + openssl_library_dirs)
+          # In case OpenSSL is being linked statically
+          or has_function('OpenSSL_add_all_algorithms',
+                       includes=['openssl/evp.h'],
+                       include_dirs=module.include_dirs + openssl_include_dirs,
+                       libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
+                       library_dirs=module.library_dirs + openssl_library_dirs)
+          ):
+        module.define_macros.append(('HASH_MODULE', '1'))
+        module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
+        module.libraries.extend(openssl_libraries)
+        module.include_dirs.extend(openssl_include_dirs)
+        module.library_dirs.extend(openssl_library_dirs)
+      elif building_for_windows:
+        # OpenSSL is not available, but in Windows we can rely on Wincrypt.
+        module.define_macros.append(('HASH_MODULE', '1'))
+        module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
+      else:
+        # OpenSSL is not available, exclude hash.c, as it requires some hashing 
+        # functions.
+        exclusions.append('yara/libyara/modules/hash/hash.c')
 
       if self.enable_magic:
         module.define_macros.append(('MAGIC_MODULE', '1'))
