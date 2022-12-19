@@ -1243,8 +1243,13 @@ int yara_callback(
       continue;
 
     string_instance_list = PyList_New(0);
+
     if (string_instance_list == NULL)
-      return PyErr_Format(PyExc_TypeError, "Out of memory");
+    {
+        PyErr_Format(PyExc_TypeError, "out of memory");
+        return CALLBACK_ERROR;
+    }
+
 
     yr_string_matches_foreach(context, string, m)
     {
@@ -1255,8 +1260,13 @@ int yara_callback(
           object,
           m->match_length,
           m->xor_key);
+
       if (string_match_instance == NULL)
-        return PyErr_Format(PyExc_TypeError, "Out of memory");
+      {
+        Py_DECREF(object);
+        PyErr_Format(PyExc_TypeError, "out of memory");
+        return CALLBACK_ERROR;
+      }
 
       PyList_Append(string_instance_list, string_match_instance);
 
@@ -1268,8 +1278,14 @@ int yara_callback(
         string->identifier,
         string->flags,
         string_instance_list);
+
     if (object == NULL)
-      return PyErr_Format(PyExc_TypeError, "Out of memory");
+    {
+        PyErr_Format(PyExc_TypeError, "out of memory");
+        return CALLBACK_ERROR;
+    }
+
+
     Py_DECREF(string_instance_list);
 
     PyList_Append(string_list, object);
@@ -3096,6 +3112,7 @@ static PyMethodDef yara_methods[] = {
 static PyObject* YaraWarningError_getwarnings(PyObject *self, void* closure)
 {
   PyObject *args = PyObject_GetAttrString(self, "args");
+
   if (!args) {
     return NULL;
   }
@@ -3103,6 +3120,7 @@ static PyObject* YaraWarningError_getwarnings(PyObject *self, void* closure)
   PyObject* ret = PyTuple_GetItem(args, 0);
   Py_XINCREF(ret);
   Py_XDECREF(args);
+
   return ret;
 }
 
@@ -3191,6 +3209,7 @@ MOD_INIT(yara)
   }
 
   PyObject* module_names_list = PyList_New(0);
+
   if (module_names_list == NULL)
   {
     PyErr_SetString(YaraError, "module list error");
