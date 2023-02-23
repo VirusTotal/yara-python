@@ -2626,7 +2626,7 @@ static PyObject* yara_compile(
 {
   static char *kwlist[] = {
     "filepath", "source", "file", "filepaths", "sources",
-    "includes", "externals", "error_on_warning", "include_callback", NULL};
+    "includes", "externals", "error_on_warning", "strict_escape", "include_callback", NULL};
 
   YR_COMPILER* compiler;
   YR_RULES* yara_rules;
@@ -2643,6 +2643,7 @@ static PyObject* yara_compile(
   PyObject* includes = NULL;
   PyObject* externals = NULL;
   PyObject* error_on_warning = NULL;
+  PyObject* strict_escape = NULL;
   PyObject* include_callback = NULL;
 
   Py_ssize_t pos = 0;
@@ -2659,7 +2660,7 @@ static PyObject* yara_compile(
   if (PyArg_ParseTupleAndKeywords(
         args,
         keywords,
-        "|ssOOOOOOO",
+        "|ssOOOOOOOO",
         kwlist,
         &filepath,
         &source,
@@ -2669,6 +2670,7 @@ static PyObject* yara_compile(
         &includes,
         &externals,
         &error_on_warning,
+        &strict_escape,
         &include_callback))
   {
     char num_args = 0;
@@ -2715,6 +2717,21 @@ static PyObject* yara_compile(
         return PyErr_Format(
             PyExc_TypeError,
             "'error_on_warning' param must be of boolean type");
+      }
+    }
+
+    if (strict_escape != NULL)
+    {
+      if (PyBool_Check(strict_escape))
+      {
+        compiler->strict_escape = PyObject_IsTrue(strict_escape);
+      }
+      else
+      {
+        yr_compiler_destroy(compiler);
+        return PyErr_Format(
+            PyExc_TypeError,
+            "'strict_escape' param must be of boolean type");
       }
     }
 
