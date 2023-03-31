@@ -22,7 +22,15 @@ Here it goes a little example:
     >>> print(matches[0].tags)
     ['bar']
     >>> print(matches[0].strings)
-    [(10L, '$a', 'lmn')]
+    [$a]
+    >>> print(matches[0].strings[0].identifier)
+    $a
+    >>> print(matches[0].strings[0].instances)
+    [lmn]
+    >>> print(matches[0].strings[0].instances[0].offset)
+    10
+    >>> print(matches[0].strings[0].instances[0].matched_length)
+    3
 
 
 Installation
