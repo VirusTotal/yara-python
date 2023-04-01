@@ -544,6 +544,7 @@ typedef struct
   PyObject* warnings;
   YR_RULES* rules;
   YR_RULE* iter_current_rule;
+  PyObject* stats;
 } Rules;
 
 
@@ -563,6 +564,10 @@ static PyObject* Rules_save(
     PyObject* keywords);
 
 static PyObject* Rules_profiling_info(
+    PyObject* self,
+    PyObject* args);
+
+static PyObject* Rules_stats(
     PyObject* self,
     PyObject* args);
 
@@ -599,6 +604,11 @@ static PyMethodDef Rules_methods[] =
   {
     "profiling_info",
     (PyCFunction) Rules_profiling_info,
+    METH_NOARGS
+  },
+  {
+    "stats",
+    (PyCFunction) Rules_stats,
     METH_NOARGS
   },
   {
@@ -2360,6 +2370,15 @@ static PyObject* Rules_save(
 }
 
 
+static PyObject* Rules_stats(
+    PyObject* self,
+    PyObject* args)
+{
+  Rules* rules = (Rules*) self;
+  return rules->stats;
+}
+
+
 static PyObject* Rules_profiling_info(
     PyObject* self,
     PyObject* args)
@@ -2631,6 +2650,7 @@ static PyObject* yara_compile(
   YR_COMPILER* compiler;
   YR_RULES* yara_rules;
   FILE* fh;
+  YR_RULES_STATS stats;
 
   Rules* rules;
 
@@ -2644,6 +2664,7 @@ static PyObject* yara_compile(
   PyObject* externals = NULL;
   PyObject* error_on_warning = NULL;
   PyObject* include_callback = NULL;
+  PyObject* statresults;
 
   Py_ssize_t pos = 0;
 
@@ -2922,7 +2943,14 @@ static PyObject* yara_compile(
           rules->rules = yara_rules;
           rules->iter_current_rule = rules->rules->rules_table;
           rules->warnings = warnings;
-
+          statresults = PyDict_New();
+          yr_rules_get_stats(yara_rules, &stats);
+          PyDict_SetItemString(statresults, "num_rules", PyLong_FromLong(stats.num_rules));
+          PyDict_SetItemString(statresults, "num_strings", PyLong_FromLong(stats.num_strings));
+          PyDict_SetItemString(statresults, "ac_matches", PyLong_FromLong(stats.ac_matches));
+          PyDict_SetItemString(statresults, "ac_tables_size", PyLong_FromLong(stats.ac_tables_size));
+          rules->stats = statresults;
+          
           if (externals != NULL && externals != Py_None)
             rules->externals = PyDict_Copy(externals);
 
