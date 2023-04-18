@@ -59,6 +59,18 @@ environment:
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
       VS: "Visual Studio 14 2015 Win64"
 
+    - PYTHON: "C:\\Python311"
+      PYTHON_VERSION: "3.11.2"
+      PYTHON_ARCH: "32"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
+      VS: "Visual Studio 14 2015"
+
+    - PYTHON: "C:\\Python311-x64"
+      PYTHON_VERSION: "3.11.2"
+      PYTHON_ARCH: "64"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
+      VS: "Visual Studio 14 2015 Win64"
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
@@ -142,7 +154,6 @@ test_script:
 after_test:
   # If tests are successful, create binary packages for the project.
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
-  - "%CMD_IN_ENV% python setup.py bdist --format=msi"
 
 artifacts:
   # Archive the generated packages in the ci.appveyor.com build report.
