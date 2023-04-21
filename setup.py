@@ -286,13 +286,18 @@ class BuildExtCommand(build_ext):
         module.include_dirs.extend(openssl_include_dirs)
         module.library_dirs.extend(openssl_library_dirs)
       elif building_for_windows:
-        # OpenSSL is not available, but in Windows we can rely on Wincrypt.
+        # OpenSSL is not available, but in Windows we can rely on Wincrypt for
+        # hashing functions.
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
+        # However authenticode-parser must be excluded because it relies on
+        # OpenSSL.
+        exclusions.append('yara/libyara/modules/pe/authenticode-parser')
       else:
-        # OpenSSL is not available, exclude hash.c, as it requires some hashing 
-        # functions.
+        # OpenSSL is not available, exclude the hash module and authenticode
+        # parser.
         exclusions.append('yara/libyara/modules/hash/hash.c')
+        exclusions.append('yara/libyara/modules/pe/authenticode-parser')
 
       if self.enable_magic:
         module.define_macros.append(('MAGIC_MODULE', '1'))
@@ -326,10 +331,15 @@ class BuildExtCommand(build_ext):
       exclusions = [os.path.normpath(x) for x in exclusions]
 
       for directory, _, files in os.walk('yara/libyara/'):
-        for x in files:
-          x = os.path.normpath(os.path.join(directory, x))
-          if x.endswith('.c') and x not in exclusions:
-            module.sources.append(x)
+        for f in files:
+          f = os.path.normpath(os.path.join(directory, f))
+          # Ignore any file that is not a .c file
+          if not f.endswith('.c'):
+            continue
+          # Ignore files that are listed in the exclusion list.
+          if any(map(lambda e: f.startswith(e), exclusions)):
+            continue
+          module.sources.append(f)
 
     build_ext.run(self)
 
