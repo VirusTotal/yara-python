@@ -140,8 +140,8 @@ clone_script:
 build_script:
   # Build the compiled extension
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-openssl
-    -L../jansson-%JANSSON_VERSION%/build/lib/Release;../openssl/lib
-    -I../jansson-%JANSSON_VERSION%/build/include;../openssl/include
+    -L../jansson-%JANSSON_VERSION%/build/lib/Release
+    -I../jansson-%JANSSON_VERSION%/build/include
     -llibcrypto"
 
 after_build:
