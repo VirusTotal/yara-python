@@ -36,7 +36,9 @@ OPTIONS = [
    ('enable-magic', None, 'enable "magic" module'),
    ('enable-dex', None, 'enable "dex" module'),
    ('enable-macho', None, 'enable "macho" module'),
-   ('enable-profiling', None, 'enable profiling features')]
+   ('enable-profiling', None, 'enable profiling features'),
+   ('enable-openssl', None, 'enable features that depend on OpenSSL'),
+]
 
 
 BOOLEAN_OPTIONS = [
@@ -45,7 +47,9 @@ BOOLEAN_OPTIONS = [
     'enable-magic',
     'enable-dex',
     'enable-macho',
-    'enable-profiling']
+    'enable-profiling',
+    'enable-openssl',
+]
 
 
 @contextlib.contextmanager
@@ -120,6 +124,7 @@ class BuildCommand(build):
     self.enable_dex = None
     self.enable_macho = None
     self.enable_profiling = None
+    self.enable_openssl = None
 
   def finalize_options(self):
 
@@ -141,6 +146,7 @@ class BuildExtCommand(build_ext):
     self.enable_dex = None
     self.enable_macho = None
     self.enable_profiling = None
+    self.enable_openssl = None
 
   def finalize_options(self):
 
@@ -155,7 +161,8 @@ class BuildExtCommand(build_ext):
         ('enable_cuckoo', 'enable_cuckoo'),
         ('enable_dex', 'enable_dex'),
         ('enable_macho', 'enable_macho'),
-        ('enable_profiling', 'enable_profiling'))
+        ('enable_profiling', 'enable_profiling'),
+        ('enable_openssl', 'enable_openssl'))
 
     if self.enable_magic and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
@@ -169,6 +176,10 @@ class BuildExtCommand(build_ext):
     if self.enable_macho and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-macho can''t be used with --dynamic-linking')
+    if self.enable_openssl and self.dynamic_linking:
+      raise distutils.errors.DistutilsOptionError(
+          '--enable-enable-openssl can''t be used with --dynamic-linking')
+
 
   def run(self):
     """Execute the build command."""
@@ -279,7 +290,7 @@ class BuildExtCommand(build_ext):
                        include_dirs=module.include_dirs + openssl_include_dirs,
                        libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
                        library_dirs=module.library_dirs + openssl_library_dirs)
-          ):
+          or self.enable_openssl):
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
         module.libraries.extend(openssl_libraries)
@@ -290,12 +301,10 @@ class BuildExtCommand(build_ext):
         # hashing functions.
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
-        # However authenticode-parser must be excluded because it relies on
-        # OpenSSL.
+        # The authenticode parser depends on OpenSSL and must be excluded.
         exclusions.append('yara/libyara/modules/pe/authenticode-parser')
       else:
-        # OpenSSL is not available, exclude the hash module and authenticode
-        # parser.
+        # Without OpenSSL there's no hash module nor authenticode parser.
         exclusions.append('yara/libyara/modules/hash/hash.c')
         exclusions.append('yara/libyara/modules/pe/authenticode-parser')
 
