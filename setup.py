@@ -290,7 +290,7 @@ class BuildExtCommand(build_ext):
                        include_dirs=module.include_dirs + openssl_include_dirs,
                        libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
                        library_dirs=module.library_dirs + openssl_library_dirs)
-          ):
+          or self.enable_openssl):
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
         module.libraries.extend(openssl_libraries)
@@ -301,15 +301,7 @@ class BuildExtCommand(build_ext):
         # hashing functions.
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
-        # However authenticode-parser must be excluded because it relies on
-        # OpenSSL.
-        if self.enable_openssl:
-          module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
-        else: 
-          exclusions.append('yara/libyara/modules/pe/authenticode-parser')
       else:
-        # OpenSSL is not available, exclude the hash module and authenticode
-        # parser.
         exclusions.append('yara/libyara/modules/hash/hash.c')
         exclusions.append('yara/libyara/modules/pe/authenticode-parser')
 

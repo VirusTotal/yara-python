@@ -142,7 +142,7 @@ build_script:
   - "%CMD_IN_ENV% python setup.py build_ext --enable-cuckoo --enable-openssl
     -L../jansson-%JANSSON_VERSION%/build/lib/Release;../openssl/lib
     -I../jansson-%JANSSON_VERSION%/build/include;../openssl/include
-    -DBUCKETS_128,CHECKSUM_1B -llibcrypto"
+    -llibcrypto"
 
 after_build:
   - "%CMD_IN_ENV% python setup.py install"
