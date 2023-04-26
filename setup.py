@@ -301,7 +301,10 @@ class BuildExtCommand(build_ext):
         # hashing functions.
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
+        # The authenticode parser depends on OpenSSL and must be excluded.
+        exclusions.append('yara/libyara/modules/pe/authenticode-parser')
       else:
+        # Without OpenSSL there's no hash module nor authenticode parser.
         exclusions.append('yara/libyara/modules/hash/hash.c')
         exclusions.append('yara/libyara/modules/pe/authenticode-parser')
 
