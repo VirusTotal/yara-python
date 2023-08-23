@@ -1394,29 +1394,28 @@ static size_t flo_read(
     PyObject* bytes = PyObject_CallMethod(
         (PyObject*) user_data, "read", "n", (Py_ssize_t) size);
 
-    PyGILState_Release(gil_state);
-
-    if (bytes != NULL)
+    if (bytes == NULL) 
     {
-      Py_ssize_t len;
-      char* buffer;
-
-      int result = PyBytes_AsStringAndSize(bytes, &buffer, &len);
-
-      if (result == -1 || (size_t) len < size)
-      {
-        Py_DECREF(bytes);
-        return i;
-      }
-
-      memcpy((char*) ptr + i * size, buffer, size);
-
-      Py_DECREF(bytes);
-    }
-    else
-    {
+      PyGILState_Release(gil_state);
       return i;
     }
+
+    Py_ssize_t len;
+    char* buffer;
+
+    int result = PyBytes_AsStringAndSize(bytes, &buffer, &len);
+
+    if (result == -1 || (size_t) len < size)
+    {
+      Py_DECREF(bytes);
+      PyGILState_Release(gil_state);
+      return i;
+    }
+
+    memcpy((char*) ptr + i * size, buffer, size);
+
+    Py_DECREF(bytes);
+    PyGILState_Release(gil_state);
   }
 
   return count;
@@ -1444,12 +1443,11 @@ static size_t flo_write(
         (PyObject*) user_data, "write", "s#", (char*) ptr + i * size, size);
     #endif
 
+    Py_XDECREF(result);
     PyGILState_Release(gil_state);
 
     if (result == NULL)
       return i;
-
-    Py_DECREF(result);
   }
 
   return count;
