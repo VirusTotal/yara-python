@@ -1884,6 +1884,7 @@ static void StringMatchInstance_dealloc(
 
   Py_DECREF(object->offset);
   Py_DECREF(object->matched_data);
+  Py_DECREF(object->matched_length);
   Py_DECREF(object->xor_key);
 
   PyObject_Del(self);
@@ -1923,7 +1924,10 @@ static PyObject* StringMatchInstance_plaintext(
   StringMatchInstance* instance = (StringMatchInstance*) self;
   uint64_t xor_key = PyLong_AsUnsignedLongLong(instance->xor_key);
   if (xor_key == 0)
+  {
+      Py_INCREF(instance->matched_data);
       return instance->matched_data;
+  }
 
   int result = PyBytes_AsStringAndSize(instance->matched_data, &pb, &length);
   if (result == -1)
