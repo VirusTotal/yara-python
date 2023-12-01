@@ -7,22 +7,6 @@ environment:
     JANSSON_VERSION: "2.13"
 
   matrix:
-
-    # Pre-installed Python versions, which Appveyor may upgrade to
-    # a later point release.
-    # See: http://www.appveyor.com/docs/installed-software#python
-    - PYTHON: "C:\\Python37"
-      PYTHON_VERSION: "3.7.x"
-      PYTHON_ARCH: "32"
-      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
-      VS: "Visual Studio 14 2015"
-
-    - PYTHON: "C:\\Python37-x64"
-      PYTHON_VERSION: "3.7.x"
-      PYTHON_ARCH: "64"
-      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
-      VS: "Visual Studio 14 2015 Win64"
-
     - PYTHON: "C:\\Python38"
       PYTHON_VERSION: "3.8.x"
       PYTHON_ARCH: "32"
@@ -71,16 +55,29 @@ environment:
       OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
       VS: "Visual Studio 14 2015 Win64"
 
+    - PYTHON: "C:\\Python312"
+      PYTHON_VERSION: "3.12"
+      PYTHON_ARCH: "32"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/fakubeldw67e9pmg/artifacts/YARA.OpenSSL.x86.1.1.1.nupkg"
+      VS: "Visual Studio 14 2015"
+
+    - PYTHON: "C:\\Python312-x64"
+      PYTHON_VERSION: "3.12"
+      PYTHON_ARCH: "64"
+      OPENSSL_LIB: "https://ci.appveyor.com/api/buildjobs/q63539qt9yqaqspo/artifacts/YARA.OpenSSL.x64.1.1.1.nupkg"
+      VS: "Visual Studio 14 2015 Win64"
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
   # purpose but it is problematic because it tends to cancel builds pushed
   # directly to master instead of just PR builds (or the converse).
   # credits: JuliaLang developers.
-  - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
-        https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
-        Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
-          throw "There are newer queued builds for this pull request, failing early." }
+  - ps:
+      if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
+      https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
+      Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
+      throw "There are newer queued builds for this pull request, failing early." }
 
   - ps: "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12"
 
@@ -97,7 +94,7 @@ install:
 
   # Check that we have the expected version and architecture for Python
   - "python --version"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - 'python -c "import struct; print(struct.calcsize(''P'') * 8)"'
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
@@ -131,11 +128,10 @@ install:
   # projects/yara-python
   - cd ../../yara-python
 
-
 clone_script:
-- cmd: git clone -q --recursive --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
-- cmd: git fetch
-- cmd: git checkout -qf %APPVEYOR_REPO_BRANCH%
+  - cmd: git clone -q --recursive --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
+  - cmd: git fetch
+  - cmd: git checkout -qf %APPVEYOR_REPO_BRANCH%
 
 build_script:
   # Build the compiled extension
@@ -163,10 +159,10 @@ deploy:
   provider: GitHub
   auth_token:
     secure: d3qqX7bmrBiKJI38yFPc5vHrGGfS3LxLC7FaG6ewI2ghPPE22Pk6QtyrEFFb73PL
-  artifact:  /.*\.exe/
+  artifact: /.*\.exe/
   draft: true
   on:
-    APPVEYOR_REPO_TAG: true        # deploy on tag push only
+    APPVEYOR_REPO_TAG: true # deploy on tag push only
 
 #on_success:
 #  - TODO: upload the content of dist/*.whl to a public wheelhouse
