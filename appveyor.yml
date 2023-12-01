@@ -108,6 +108,9 @@ install:
   # Install wheel.
   - "%CMD_IN_ENV% pip install wheel"
 
+  # Install setuptools. Setup tools doesn't comes by default in Python 3.12.
+  - "%CMD_IN_ENV% pip install setuptools"
+
   # We are in projects/yara-python, lets go out to projects.
   - cd ..
 
