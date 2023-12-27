@@ -242,6 +242,8 @@ class BuildExtCommand(build_ext):
       module.include_dirs.append('/usr/local/include')
       module.library_dirs.append('/usr/local/lib')
       module.library_dirs.append('/usr/local/opt/openssl/lib')
+      module.include_dirs.append('/opt/homebrew/include')
+      module.library_dirs.append('/opt/homebrew/opt/openssl/lib')
     elif building_for_freebsd:
       module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_FREEBSD_PROC', '1'))
