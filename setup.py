@@ -396,6 +396,7 @@ setup(
     version='4.4.0',
     description='Python interface for YARA',
     long_description=readme,
+    long_description_content_type='text/markdown',
     license='Apache 2.0',
     author='Victor M. Alvarez',
     author_email='plusvic@gmail.com, vmalvarez@virustotal.com',
