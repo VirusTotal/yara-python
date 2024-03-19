@@ -67,7 +67,7 @@ jobs:
             fi
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
-          CIBW_CONFIG_SETTINGS: --build-option=--enable-cuckoo --build-option=--enable-magic --build-option=--enable-dex --build-option=--enable-macho --build-option=--enable-openssl
+          # CIBW_CONFIG_SETTINGS: --build-option=--enable-cuckoo --build-option=--enable-magic --build-option=--enable-dex --build-option=--enable-macho --build-option=--enable-openssl
           CIBW_ENVIRONMENT: ${{ matrix.env }}
           CIBW_SKIP: cp36-*
           CIBW_TEST_COMMAND: python {package}/tests.py
