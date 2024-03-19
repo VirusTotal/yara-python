@@ -21,20 +21,20 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-          # - os: ubuntu-22.04
-          #   arch: i686
-          # - os: ubuntu-22.04
-          #   arch: aarch64
-          # - os: macos-12
-          #   arch: x86_64 universal2
-          # - os: windows-2022
-          #   arch: x86
-          #   before: vcpkg install openssl:x86-windows-static
-          #   env: LIB="C:\\vcpkg\\packages\\openssl_x86-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x86-windows-static\\include"
-          # - os: windows-2022
-          #   arch: AMD64
-          #   before: vcpkg install openssl:x64-windows-static
-          #   env: LIB="C:\\vcpkg\\packages\\openssl_x64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x64-windows-static\\include"
+          - os: ubuntu-22.04
+            arch: i686
+          - os: ubuntu-22.04
+            arch: aarch64
+          - os: macos-12
+            arch: x86_64 universal2
+          - os: windows-2022
+            arch: x86
+            before: vcpkg install openssl:x86-windows-static
+            env: LIB="C:\\vcpkg\\packages\\openssl_x86-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x86-windows-static\\include"
+          - os: windows-2022
+            arch: AMD64
+            before: vcpkg install openssl:x64-windows-static
+            env: LIB="C:\\vcpkg\\packages\\openssl_x64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x64-windows-static\\include"
 
     steps:
       - uses: actions/checkout@v4
