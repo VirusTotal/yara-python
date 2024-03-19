@@ -67,7 +67,7 @@ jobs:
             fi
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
-          CIBW_CONFIG_SETTINGS: --enable-cuckoo --enable-magic --enable-dex --enable-macho --enable-openssl
+          CIBW_CONFIG_SETTINGS: --global-option=--enable-cuckoo --global-option=--enable-magic --global-option=--enable-dex --global-option=--enable-macho --global-option=--enable-openssl
           CIBW_ENVIRONMENT: ${{ matrix.env }}
           CIBW_SKIP: cp36-*
           CIBW_TEST_COMMAND: python {package}/tests.py
@@ -78,26 +78,26 @@ jobs:
           name: python-package-distributions-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
-  publish-to-pypi:
-    needs: [build]
-    runs-on: ubuntu-latest
+  # publish-to-pypi:
+  #   needs: [build]
+  #   runs-on: ubuntu-latest
 
-    # Only publish to PyPI on tag pushes
-    if: startsWith(github.ref, 'refs/tags/')
+  #   # Only publish to PyPI on tag pushes
+  #   if: startsWith(github.ref, 'refs/tags/')
 
-    environment:
-      name: pypi
-      url: https://pypi.org/p/yara-python
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
+  #   environment:
+  #     name: pypi
+  #     url: https://pypi.org/p/yara-python
+  #   permissions:
+  #     id-token: write  # IMPORTANT: mandatory for trusted publishing
 
-    steps:
-      - name: Download all the dists
-        uses: actions/download-artifact@v4
-        with:
-          pattern: python-package-distributions-*
-          merge-multiple: true
-          path: dist/
+  #   steps:
+  #     - name: Download all the dists
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: python-package-distributions-*
+  #         merge-multiple: true
+  #         path: dist/
 
-      - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+  #     - name: Publish distribution to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
