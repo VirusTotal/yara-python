@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-    tags:
   pull_request:
   workflow_dispatch:
 
@@ -69,7 +68,7 @@ jobs:
           CIBW_BUILD_FRONTEND: build
           # CIBW_CONFIG_SETTINGS: --build-option=--enable-cuckoo --build-option=--enable-magic --build-option=--enable-dex --build-option=--enable-macho --build-option=--enable-openssl
           CIBW_ENVIRONMENT: ${{ matrix.env }}
-          CIBW_SKIP: cp36-*
+          CIBW_SKIP: cp36-* *-macosx_universal2:arm64
           CIBW_TEST_COMMAND: python {package}/tests.py
 
       - name: Store the distribution packages
