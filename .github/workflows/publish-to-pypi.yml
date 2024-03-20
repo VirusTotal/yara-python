@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-    tags:
   pull_request:
   workflow_dispatch:
 
@@ -21,6 +20,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
+            build-sdist: true
           - os: ubuntu-22.04
             arch: i686
           - os: ubuntu-22.04
@@ -43,7 +43,7 @@ jobs:
 
       - name: Set up QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: all
 
@@ -67,9 +67,8 @@ jobs:
             fi
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
-          CIBW_CONFIG_SETTINGS: --enable-cuckoo --enable-magic --enable-dex --enable-macho --enable-openssl
           CIBW_ENVIRONMENT: ${{ matrix.env }}
-          CIBW_SKIP: cp36-*
+          CIBW_SKIP: cp36-* *-macosx_universal2:arm64
           CIBW_TEST_COMMAND: python {package}/tests.py
 
       - name: Store the distribution packages
@@ -77,6 +76,17 @@ jobs:
         with:
           name: python-package-distributions-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
+
+      - name: Build Sdist
+        if: ${{ matrix.build-sdist }}
+        run: pipx run build --sdist
+      
+      - name: Store the source distribution package
+        if: ${{ matrix.build-sdist }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions-source
+          path: dist/*.tar.gz
 
   publish-to-pypi:
     needs: [build]
