@@ -20,20 +20,20 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-          - os: ubuntu-22.04
-            arch: i686
-          - os: ubuntu-22.04
-            arch: aarch64
-          - os: macos-12
-            arch: x86_64 universal2
-          - os: windows-2022
-            arch: x86
-            before: vcpkg install openssl:x86-windows-static
-            env: LIB="C:\\vcpkg\\packages\\openssl_x86-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x86-windows-static\\include"
-          - os: windows-2022
-            arch: AMD64
-            before: vcpkg install openssl:x64-windows-static
-            env: LIB="C:\\vcpkg\\packages\\openssl_x64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x64-windows-static\\include"
+          # - os: ubuntu-22.04
+          #   arch: i686
+          # - os: ubuntu-22.04
+          #   arch: aarch64
+          # - os: macos-12
+          #   arch: x86_64 universal2
+          # - os: windows-2022
+          #   arch: x86
+          #   before: vcpkg install openssl:x86-windows-static
+          #   env: LIB="C:\\vcpkg\\packages\\openssl_x86-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x86-windows-static\\include"
+          # - os: windows-2022
+          #   arch: AMD64
+          #   before: vcpkg install openssl:x64-windows-static
+          #   env: LIB="C:\\vcpkg\\packages\\openssl_x64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x64-windows-static\\include"
 
     steps:
       - uses: actions/checkout@v4
@@ -76,6 +76,18 @@ jobs:
         with:
           name: python-package-distributions-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
+
+  build-sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Sdist
+        run: pipx run build --sdist
+      
+      - name: Store the source distribution package
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions-source
+          path: dist/*.tar.gz
 
   # publish-to-pypi:
   #   needs: [build]
