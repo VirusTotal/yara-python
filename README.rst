@@ -36,7 +36,7 @@ Here it goes a little example:
 Installation
 ------------
 
-The easiest way of installing YARA is by using ``pip``:
+The easiest way to install YARA is by using ``pip``:
 
 .. code-block:: bash
 
@@ -55,7 +55,7 @@ Notice the ``--recursive`` option used with ``git``. This is important because
 we need to download the ``yara`` subproject containing the source code for
 ``libyara`` (the core YARA library). It's also important to note that the two
 methods above link ``libyara`` statically into yara-python. If you want to link
-dynamically against a shared ``libyara`` library use:
+dynamically against a shared ``libyara`` library, use:
 
 .. code-block:: bash
 
