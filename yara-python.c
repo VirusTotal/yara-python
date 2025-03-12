@@ -1522,6 +1522,13 @@ int process_compile_externals(
 
   while (PyDict_Next(externals, &pos, &key, &value))
   {
+    if (!PY_STRING_CHECK(key)) {
+      PyErr_Format(
+          PyExc_TypeError,
+          "keys of externals dict must be strings");
+
+      return ERROR_INVALID_ARGUMENT;
+    }
     identifier = PY_STRING_TO_C(key);
 
     if (PyBool_Check(value))
@@ -1592,6 +1599,13 @@ int process_match_externals(
 
   while (PyDict_Next(externals, &pos, &key, &value))
   {
+    if (!PY_STRING_CHECK(key)) {
+      PyErr_Format(
+          PyExc_TypeError,
+          "keys of externals dict must be strings");
+
+      return ERROR_INVALID_ARGUMENT;
+    }
     identifier = PY_STRING_TO_C(key);
 
     if (PyBool_Check(value))
