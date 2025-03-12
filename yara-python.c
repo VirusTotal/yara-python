@@ -2816,12 +2816,12 @@ static PyObject* yara_compile(
     }
     else if (file != NULL)
     {
-      fd = dup(PyObject_AsFileDescriptor(file));
+      fd = PyObject_AsFileDescriptor(file);
 
       if (fd != -1)
       {
         Py_BEGIN_ALLOW_THREADS
-        fh = fdopen(fd, "r");
+        fh = fdopen(dup(fd), "r");
         error = yr_compiler_add_file(compiler, fh, NULL, NULL);
         fclose(fh);
         Py_END_ALLOW_THREADS
