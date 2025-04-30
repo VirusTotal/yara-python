@@ -18,12 +18,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             arch: x86_64
             build-sdist: true
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             arch: i686
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             arch: aarch64
           - os: macos-12
             arch: x86_64 universal2
