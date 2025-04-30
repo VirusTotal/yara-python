@@ -51,6 +51,7 @@ jobs:
           output-dir: dist
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-* pp310-* pp311-*"
           CIBW_BEFORE_ALL_LINUX: |
             if [[ ! -z "$(which yum)" ]]; then
               yum install -y make gcc perl-core pcre-devel wget zlib-devel git automake
@@ -66,7 +67,6 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: ${{ matrix.env }}
-          CIBW_SKIP: cp36-*
           CIBW_TEST_SKIP: "*-macosx_universal2:arm64"
           CIBW_TEST_COMMAND: python {package}/tests.py
 
