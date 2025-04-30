@@ -1,0 +1,88 @@
+name: Build wheels
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build wheels on ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+            build-sdist: true
+          - os: ubuntu-24.04
+            arch: i686
+          - os: ubuntu-24.04
+            arch: aarch64
+          - os: macos-12
+            arch: x86_64 universal2
+          - os: windows-2022
+            arch: x86
+            before: vcpkg install openssl:x86-windows-static
+            env: LIB="C:\\vcpkg\\packages\\openssl_x86-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x86-windows-static\\include"
+          - os: windows-2022
+            arch: AMD64
+            before: vcpkg install openssl:x64-windows-static
+            env: LIB="C:\\vcpkg\\packages\\openssl_x64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x64-windows-static\\include"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.23.3
+        with:
+          output-dir: dist
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BEFORE_ALL_LINUX: |
+            if [[ ! -z "$(which yum)" ]]; then
+              yum install -y make gcc perl-core pcre-devel wget zlib-devel git automake
+              wget https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-1.1.1w.tar.gz
+              tar xf openssl*.gz
+              cd openssl*
+              ./config --prefix=/usr --openssldir=/etc/ssl zlib-dynamic
+              make -j$(nproc)
+              make install
+            elif [[ ! -z "$(which apk)" ]]; then
+              apk add openssl-dev
+            fi
+          CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
+          CIBW_BUILD_FRONTEND: build
+          CIBW_ENVIRONMENT: ${{ matrix.env }}
+          CIBW_SKIP: cp36-*
+          CIBW_TEST_SKIP: "*-macosx_universal2:arm64"
+          CIBW_TEST_COMMAND: python {package}/tests.py
+
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.whl
+
+      - name: Build Sdist
+        if: ${{ matrix.build-sdist }}
+        run: pipx run build --sdist
+
+      - name: Store the source distribution package
+        if: ${{ matrix.build-sdist }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions-source
+          path: dist/*.tar.gz
