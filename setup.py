@@ -178,7 +178,7 @@ class BuildExtCommand(build_ext):
           '--enable-macho can''t be used with --dynamic-linking')
     if self.enable_openssl and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
-          '--enable-enable-openssl can''t be used with --dynamic-linking')
+          '--enable-openssl can''t be used with --dynamic-linking')
 
 
   def run(self):

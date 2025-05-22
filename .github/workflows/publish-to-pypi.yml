@@ -68,7 +68,7 @@ jobs:
               apk add openssl-dev
             fi
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
-          CIBW_BUILD_FRONTEND: "build; args: --config-setting=--enable_openssl"  
+          CIBW_BUILD_FRONTEND: "build; args: --config-setting=--enable-openssl"  
           CIBW_ENVIRONMENT: ${{ matrix.env }}
           CIBW_TEST_SKIP: "*-macosx_arm64 *-macosx_x86_64"
           CIBW_TEST_COMMAND: python {package}/tests.py
