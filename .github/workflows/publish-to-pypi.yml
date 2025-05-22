@@ -27,6 +27,7 @@ jobs:
             arch: aarch64
           - os: macos-15
             arch: x86_64 arm64
+            env: MACOSX_DEPLOYMENT_TARGET=15.0
           - os: windows-2022
             arch: x86
             before: vcpkg install openssl:x86-windows-static
