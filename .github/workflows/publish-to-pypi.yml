@@ -68,6 +68,7 @@ jobs:
             fi
           CIBW_BEFORE_ALL_MACOS: |
             brew update
+            brew unlink openssl@3
             brew link --force openssl@1.1
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
