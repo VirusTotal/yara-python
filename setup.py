@@ -281,16 +281,18 @@ class BuildExtCommand(build_ext):
       module.libraries.append('yara')
     else:
       # Is OpenSSL available?
-      if (has_function('OPENSSL_version_major',
+      if (has_function('OpenSSL_add_all_algorithms',
+                       includes=['openssl/evp.h'],
                        include_dirs=module.include_dirs + openssl_include_dirs,
                        libraries=module.libraries + openssl_libraries,
                        library_dirs=module.library_dirs + openssl_library_dirs)
           # In case OpenSSL is being linked statically
-          or has_function('OPENSSL_version_major',
+          or has_function('OpenSSL_add_all_algorithms',
+                       includes=['openssl/evp.h'],
                        include_dirs=module.include_dirs + openssl_include_dirs,
                        libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
                        library_dirs=module.library_dirs + openssl_library_dirs)
-          or True):
+          or self.enable_openssl):
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
         module.libraries.extend(openssl_libraries)
