@@ -66,12 +66,8 @@ jobs:
             elif [[ ! -z "$(which apk)" ]]; then
               apk add openssl-dev
             fi
-          CIBW_BEFORE_ALL_MACOS: |
-            ls /usr/local/opt/openssl
-            ls /opt/homebrew/include
-            ls /opt/homebrew/opt/openssl/lib
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
-          CIBW_BUILD_FRONTEND: build
+          CIBW_BUILD_FRONTEND: "build; args: --enable-openssl"
           CIBW_ENVIRONMENT: ${{ matrix.env }}
           CIBW_TEST_SKIP: "*-macosx_universal2:arm64"
           CIBW_TEST_COMMAND: python {package}/tests.py
