@@ -69,7 +69,7 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: |
             brew update
             brew unlink openssl@3
-            brew link --force openssl@1.1
+            brew link --overwrite openssl@1.1
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: ${{ matrix.env }}
