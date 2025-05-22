@@ -26,7 +26,11 @@ jobs:
           - os: ubuntu-24.04
             arch: aarch64
           - os: macos-15
-            arch: x86_64 universal2
+            arch: x86_64 arm64
+            env: MACOSX_DEPLOYMENT_TARGET=15.0
+          - os: macos-14
+            arch: x86_64 arm64
+            env: MACOSX_DEPLOYMENT_TARGET=14.0
           - os: windows-2022
             arch: x86
             before: vcpkg install openssl:x86-windows-static
@@ -67,9 +71,9 @@ jobs:
               apk add openssl-dev
             fi
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
-          CIBW_BUILD_FRONTEND: build
+          CIBW_BUILD_FRONTEND: "build; args: --config-setting=--enable-openssl"  
           CIBW_ENVIRONMENT: ${{ matrix.env }}
-          CIBW_TEST_SKIP: "*-macosx_universal2:arm64"
+          CIBW_TEST_SKIP: "*-macosx_arm64 *-macosx_x86_64"
           CIBW_TEST_COMMAND: python {package}/tests.py
 
       - name: Store the distribution packages
