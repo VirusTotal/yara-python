@@ -290,7 +290,7 @@ class BuildExtCommand(build_ext):
                        include_dirs=module.include_dirs + openssl_include_dirs,
                        libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
                        library_dirs=module.library_dirs + openssl_library_dirs)
-          or self.enable_openssl):
+          or True):
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
         module.libraries.extend(openssl_libraries)
