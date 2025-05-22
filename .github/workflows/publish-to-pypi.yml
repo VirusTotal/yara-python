@@ -67,9 +67,9 @@ jobs:
               apk add openssl-dev
             fi
           CIBW_BEFORE_ALL_MACOS: |
-            brew update
-            brew unlink openssl@3
-            brew link --overwrite openssl@1.1
+            ls /usr/local/opt/openssl
+            ls /opt/homebrew/include
+            ls /opt/homebrew/opt/openssl/lib
           CIBW_BEFORE_ALL_WINDOWS: ${{ matrix.before }}
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: ${{ matrix.env }}
