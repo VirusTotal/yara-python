@@ -818,10 +818,25 @@ PyObject* convert_dictionary_to_python(
 
     if (py_object != NULL)
     {
-      PyDict_SetItemString(
-          py_dict,
-          dictionary->items->objects[i].key->c_string,
-          py_object);
+      // Dictionary keys are SIZED_STRING values holding arbitrary bytes (for
+      // example the pe.version_info keys come straight from the binary), so
+      // they are not guaranteed to be valid UTF-8. PyDict_SetItemString would
+      // decode strictly and raise UnicodeDecodeError on a non-UTF-8 key, which
+      // aborts the whole scan (see issue #273). Build the key tolerantly and
+      // use its length so embedded NULs are handled too.
+      SIZED_STRING* key = dictionary->items->objects[i].key;
+
+      #if PY_MAJOR_VERSION >= 3
+      PyObject* py_key = PyUnicode_DecodeUTF8(key->c_string, key->length, "replace");
+      #else
+      PyObject* py_key = PyString_FromStringAndSize(key->c_string, key->length);
+      #endif
+
+      if (py_key != NULL)
+      {
+        PyDict_SetItem(py_dict, py_key, py_object);
+        Py_DECREF(py_key);
+      }
 
       Py_DECREF(py_object);
     }
