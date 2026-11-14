@@ -843,7 +843,7 @@ class TestYara(unittest.TestCase):
 
     def testCompileFile(self):
 
-        f = tempfile.TemporaryFile('wt')
+        f = tempfile.TemporaryFile('w+t')
 
         f.write('rule test { condition: true }')
         f.flush()
