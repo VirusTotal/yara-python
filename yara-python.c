@@ -2679,7 +2679,6 @@ static PyObject* yara_compile(
 
   Py_ssize_t pos = 0;
 
-  int fd;
   int error = 0;
 
   char* filepath = NULL;
@@ -2845,21 +2844,43 @@ static PyObject* yara_compile(
     }
     else if (file != NULL)
     {
-      fd = PyObject_AsFileDescriptor(file);
+      PyObject* read_result = PyObject_CallMethod(file, "read", NULL);
 
-      if (fd != -1)
+      if (read_result != NULL)
       {
-        Py_BEGIN_ALLOW_THREADS
-        fh = fdopen(dup(fd), "r");
-        error = yr_compiler_add_file(compiler, fh, NULL, NULL);
-        fclose(fh);
-        Py_END_ALLOW_THREADS
+        const char* buffer = NULL;
+        Py_ssize_t size = 0;
+
+        if (PyUnicode_Check(read_result))
+        {
+          buffer = PyUnicode_AsUTF8AndSize(read_result, &size);
+        }
+        else if (PyBytes_Check(read_result))
+        {
+          size = PyBytes_GET_SIZE(read_result);
+          buffer = PyBytes_AS_STRING(read_result);
+        }
+        else
+        {
+          result = PyErr_Format(
+              PyExc_TypeError,
+              "'file' read() must return string or bytes");
+        }
+
+        (void) size;
+
+        if (buffer != NULL)
+        {
+          Py_BEGIN_ALLOW_THREADS
+          error = yr_compiler_add_string(compiler, buffer, NULL);
+          Py_END_ALLOW_THREADS
+        }
+
+        Py_DECREF(read_result);
       }
       else
       {
-        result = PyErr_Format(
-            PyExc_TypeError,
-            "'file' is not a file object");
+        result = NULL;
       }
     }
     else if (sources_dict != NULL)
