@@ -39,6 +39,10 @@ jobs:
             arch: AMD64
             before: vcpkg install openssl:x64-windows-static
             env: LIB="C:\\vcpkg\\packages\\openssl_x64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_x64-windows-static\\include"
+          - os: windows-11-arm
+            arch: ARM64
+            before: vcpkg install openssl:arm64-windows-static
+            env: LIB="C:\\vcpkg\\packages\\openssl_arm64-windows-static\\lib" INCLUDE="C:\\vcpkg\\packages\\openssl_arm64-windows-static\\include"
 
     steps:
       - uses: actions/checkout@v4

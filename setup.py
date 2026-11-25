@@ -198,22 +198,27 @@ class BuildExtCommand(build_ext):
     for library in self.libraries or []:
       module.libraries.append(library)
 
-    building_for_windows = self.plat_name in ('win32','win-amd64')
+    building_for_windows = self.plat_name in ('win32','win-amd64','win-arm64')
     building_for_osx = 'macosx' in self.plat_name
     building_for_linux = 'linux' in self.plat_name
     building_for_freebsd = 'freebsd' in self.plat_name
     building_for_openbsd = 'openbsd' in self.plat_name # need testing
 
     if building_for_windows:
-      arch = 'x86' if self.plat_name == 'win32' else 'x64'
-      openssl_include_dirs = [
-        os.path.join(base_dir, 'yara\\windows\\vs2015\\packages\\YARA.OpenSSL.{}.1.1.1\\include'.format(arch)),
-        os.path.join(base_dir, 'yara\\windows\\vs2017\\packages\\YARA.OpenSSL.{}.1.1.1\\include'.format(arch))
-      ]
-      openssl_library_dirs = [
-        os.path.join(base_dir, 'yara\\windows\\vs2015\\packages\\YARA.OpenSSL.{}.1.1.1\\lib'.format(arch)),
-        os.path.join(base_dir, 'yara\\windows\\vs2017\\packages\\YARA.OpenSSL.{}.1.1.1\\lib'.format(arch))
-      ]
+      # The YARA.OpenSSL NuGet packages only exist for x86 and x64.
+      arch = {'win32': 'x86', 'win-amd64': 'x64'}.get(self.plat_name)
+      if arch:
+        openssl_include_dirs = [
+          os.path.join(base_dir, 'yara\\windows\\vs2015\\packages\\YARA.OpenSSL.{}.1.1.1\\include'.format(arch)),
+          os.path.join(base_dir, 'yara\\windows\\vs2017\\packages\\YARA.OpenSSL.{}.1.1.1\\include'.format(arch))
+        ]
+        openssl_library_dirs = [
+          os.path.join(base_dir, 'yara\\windows\\vs2015\\packages\\YARA.OpenSSL.{}.1.1.1\\lib'.format(arch)),
+          os.path.join(base_dir, 'yara\\windows\\vs2017\\packages\\YARA.OpenSSL.{}.1.1.1\\lib'.format(arch))
+        ]
+      else:
+        openssl_include_dirs = []
+        openssl_library_dirs = []
       openssl_libraries = ['libcrypto']
     else:
       openssl_include_dirs = []
